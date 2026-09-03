@@ -59,6 +59,11 @@ module Invidious::Routing
     post "/login", Routes::Login, :login
     post "/signout", Routes::Login, :signout
 
+    # Single sign-on. Both are GET: the first is a link the user follows, the
+    # second is where the provider sends the browser back.
+    get "/oidc/login", Routes::Login, :oidc_login
+    get "/oidc/callback", Routes::Login, :oidc_callback
+
     # User preferences
     get "/preferences", Routes::PreferencesRoute, :show
     post "/preferences", Routes::PreferencesRoute, :update

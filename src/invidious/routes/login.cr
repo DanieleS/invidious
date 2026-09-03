@@ -34,6 +34,13 @@ module Invidious::Routes::Login
       return error_template(403, "Login has been disabled by administrator.")
     end
 
+    # The login page hides the password form under `oidc_only`, but hiding a
+    # form is not disabling it: this endpoint is still reachable, and with
+    # registration open it would still create local accounts.
+    if CONFIG.oidc_only
+      return error_template(403, "Password login has been disabled by administrator.")
+    end
+
     # https://stackoverflow.com/a/574698
     email = env.params.body["email"]?.try &.downcase.byte_slice(0, 254)
     password = env.params.body["password"]?
@@ -54,7 +61,16 @@ module Invidious::Routes::Login
       user = Invidious::Database::Users.select(email: email)
 
       if user
-        if Crypto::Bcrypt::Password.new(user.password.not_nil!).verify(password.byte_slice(0, 55))
+        # An account provisioned through single sign-on has no password at all,
+        # and `users.password` is nullable. Without this guard `not_nil!` would
+        # raise, turning a wrong login into a 500 that explains nothing.
+        password_hash = user.password
+
+        if password_hash.nil?
+          return error_template(401, "Wrong username or password")
+        end
+
+        if Crypto::Bcrypt::Password.new(password_hash).verify(password.byte_slice(0, 55))
           sid = Base64.urlsafe_encode(Random::Secure.random_bytes(32))
           Invidious::Database::SessionIDs.insert(sid, email)
 
@@ -150,6 +166,188 @@ module Invidious::Routes::Login
     end
   end
 
+  # Single sign-on, step 1: start the authorization code flow and park in a
+  # cookie the values the callback will need to finish it.
+  def self.oidc_login(env)
+    locale = env.get("preferences").as(Preferences).locale
+
+    referer = get_referer(env, "/feed/subscriptions")
+
+    return env.redirect referer if env.get? "user"
+
+    if !CONFIG.login_enabled
+      return error_template(400, "Login has been disabled by administrator.")
+    end
+
+    if !Invidious::OIDC.enabled?
+      return error_template(404, "Single sign-on has not been configured.")
+    end
+
+    state = Base64.urlsafe_encode(Random::Secure.random_bytes(32), padding: false)
+    nonce = Base64.urlsafe_encode(Random::Secure.random_bytes(32), padding: false)
+    code_verifier = Invidious::OIDC.generate_code_verifier
+
+    begin
+      authorization_url = Invidious::OIDC.authorization_url(
+        redirect_uri: self.oidc_redirect_uri,
+        state: state,
+        nonce: nonce,
+        code_challenge: Invidious::OIDC.code_challenge_for(code_verifier)
+      )
+    rescue ex : Invidious::OIDC::Error
+      LOGGER.error(ex.message.to_s)
+      return error_template(503, "The identity provider could not be reached.")
+    end
+
+    flow = {state: state, nonce: nonce, code_verifier: code_verifier, referer: referer}
+    env.response.cookies << self.oidc_flow_cookie(flow.to_json)
+
+    env.redirect authorization_url
+  end
+
+  # Single sign-on, step 2: the provider sends the browser back here.
+  def self.oidc_callback(env)
+    locale = env.get("preferences").as(Preferences).locale
+    host = env.get("header_x-forwarded-host")
+
+    if !CONFIG.login_enabled || !Invidious::OIDC.enabled?
+      return error_template(400, "Login has been disabled by administrator.")
+    end
+
+    flow_cookie = env.request.cookies[OIDC_FLOW_COOKIE]?
+
+    # A flow cookie is good for exactly one callback, whatever the outcome.
+    env.response.cookies << self.oidc_flow_cookie("", expired: true)
+
+    if flow_cookie.nil?
+      return error_template(400, "This sign-on attempt has expired. Please try again.")
+    end
+
+    begin
+      flow = JSON.parse(URI.decode_www_form(flow_cookie.value))
+      state = flow["state"].as_s
+      nonce = flow["nonce"].as_s
+      code_verifier = flow["code_verifier"].as_s
+      # Already sanitised into a local path by `get_referer` in step 1.
+      referer = flow["referer"].as_s
+    rescue
+      return error_template(400, "This sign-on attempt has expired. Please try again.")
+    end
+
+    # The provider cannot set cookies for this host, so a `state` matching the
+    # cookie is what proves this callback answers a flow that this browser
+    # started. Without it the callback is a CSRF hole — the defect review found
+    # in iv-org/invidious#3164.
+    if env.params.query["state"]? != state
+      return error_template(400, "This sign-on attempt could not be verified. Please try again.")
+    end
+
+    if error = env.params.query["error"]?
+      LOGGER.error("OIDC: provider refused the login: #{error}")
+      return error_template(403, "The identity provider refused the sign-on.")
+    end
+
+    code = env.params.query["code"]?
+    if code.nil? || code.empty?
+      return error_template(400, "The identity provider returned no authorization code.")
+    end
+
+    begin
+      tokens = Invidious::OIDC.exchange_code(code, code_verifier, self.oidc_redirect_uri)
+      claims = Invidious::OIDC.claims(tokens, nonce)
+    rescue ex : Invidious::OIDC::Error
+      LOGGER.error(ex.message.to_s)
+      return error_template(403, "The identity provider refused the sign-on.")
+    end
+
+    email = Invidious::OIDC.identity(claims)
+    if email.nil?
+      LOGGER.error("OIDC: claim '#{CONFIG.oidc_claim}' is missing from the token")
+      return error_template(403, "The identity provider returned no account identity.")
+    end
+
+    user = Invidious::Database::Users.select(email: email)
+    sid = Base64.urlsafe_encode(Random::Secure.random_bytes(32))
+
+    if user.nil?
+      if !CONFIG.oidc_auto_provision
+        return error_template(403, "This account does not exist and automatic account creation is disabled.")
+      end
+
+      # No password: `users.password` is nullable, and an account with none can
+      # only ever be entered through the provider.
+      user, sid = create_user(sid, email, nil)
+
+      if language_header = env.request.headers["Accept-Language"]?
+        if language = ANG.language_negotiator.best(language_header, I18n::LOCALES.keys)
+          user.preferences.locale = language.header
+        end
+      end
+
+      Invidious::Database::Users.insert(user)
+
+      # The subscriptions feed reads a materialized view per user that nothing
+      # creates on demand: registration builds it by hand, and so must this
+      # path, or subscriptions are broken for every account created here.
+      view_name = "subscriptions_#{sha256(user.email)}"
+      PG_DB.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
+
+      # Preferences the visitor set while anonymous are worth keeping on the
+      # account that has just been created for them, exactly as registration
+      # does.
+      if env.request.cookies["PREFS"]?
+        user.preferences = env.get("preferences").as(Preferences)
+        Invidious::Database::Users.update_preferences(user)
+      end
+    end
+
+    Invidious::Database::SessionIDs.insert(sid, email)
+
+    if alt = CONFIG.alternative_domains.index(host)
+      env.response.cookies["SID"] = Invidious::User::Cookies.sid(CONFIG.alternative_domains[alt], sid)
+    else
+      env.response.cookies["SID"] = Invidious::User::Cookies.sid(CONFIG.domain, sid)
+    end
+
+    # Preferences in a cookie belong to the anonymous visitor and would shadow
+    # the ones stored on the account.
+    if env.request.cookies["PREFS"]?
+      cookie = env.request.cookies["PREFS"]
+      cookie.expires = Time.utc(1990, 1, 1)
+      env.response.cookies << cookie
+    end
+
+    env.redirect referer
+  end
+
+  OIDC_FLOW_COOKIE = "OIDC_FLOW"
+
+  # Holds `state`, `nonce`, the PKCE verifier and where to return to.
+  #
+  # SameSite has to be Lax and not Strict: the callback arrives as a top-level
+  # navigation from the provider's site, and Strict withholds the cookie in
+  # exactly that case, which would break every sign-on. No domain is set
+  # either, so the cookie stays bound to the host that issued it.
+  private def self.oidc_flow_cookie(value : String, expired : Bool = false) : HTTP::Cookie
+    HTTP::Cookie.new(
+      name: OIDC_FLOW_COOKIE,
+      value: URI.encode_www_form(value),
+      path: "/",
+      expires: expired ? Time.utc(1990, 1, 1) : Time.utc + 10.minutes,
+      secure: (Kemal.config.ssl || CONFIG.https_only) ? true : false,
+      http_only: true,
+      samesite: HTTP::Cookie::SameSite::Lax
+    )
+  end
+
+  # Built from the configured domain rather than from the request, because the
+  # redirect URI sent to the authorization endpoint and the one sent to the
+  # token endpoint have to be byte-identical: providers compare them and reject
+  # the exchange when they differ.
+  private def self.oidc_redirect_uri : String
+    "#{HOST_URL}/oidc/callback"
+  end
+
   def self.signout(env)
     locale = env.get("preferences").as(Preferences).locale
 
@@ -176,6 +374,16 @@ module Invidious::Routes::Login
     env.request.cookies.each do |cookie|
       cookie.expires = Time.utc(1990, 1, 1)
       env.response.cookies << cookie
+    end
+
+    # An account with no password can only have been created by single sign-on.
+    # Ending just the Invidious session would leave the provider's own session
+    # standing, so the next click on "log in" would walk straight back in
+    # without asking anything — which does not look like a sign-out.
+    if CONFIG.oidc_rp_logout && Invidious::OIDC.enabled? && user.password.nil?
+      if end_session_url = Invidious::OIDC.end_session_url(HOST_URL.presence)
+        return env.redirect end_session_url
+      end
     end
 
     env.redirect referer

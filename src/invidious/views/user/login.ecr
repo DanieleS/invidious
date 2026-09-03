@@ -6,6 +6,15 @@
     <div class="pure-u-1 pure-u-lg-1-5"></div>
     <div class="pure-u-1 pure-u-lg-3-5">
         <div class="h-box">
+            <% if Invidious::OIDC.enabled? %>
+                <p>
+                    <a class="pure-button pure-button-primary" href="/oidc/login?referer=<%= URI.encode_www_form(referer) %>">
+                        <%= I18n.translate(locale, "Sign in with `x`", CONFIG.oidc_display_name) %>
+                    </a>
+                </p>
+            <% end %>
+
+            <% if !CONFIG.oidc_only %>
             <% case account_type when %>
             <% else # "invidious" %>
                 <form class="pure-form pure-form-stacked" action="/login?referer=<%= URI.encode_www_form(referer) %>&type=invidious" method="post">
@@ -43,6 +52,7 @@
                         <% end %>
                     </fieldset>
                 </form>
+            <% end %>
             <% end %>
         </div>
     </div>

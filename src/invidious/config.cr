@@ -137,6 +137,29 @@ class Config
   property registration_enabled : Bool = true
   property statistics_enabled : Bool = false
   property admins : Array(String) = [] of String
+
+  # OpenID Connect single sign-on. An empty issuer disables it entirely.
+  #
+  # These are deliberately flat instead of a nested `oidc:` block: the macro in
+  # `Config.load` derives one `INVIDIOUS_*` override per top-level property, so
+  # flat keys let a containerised deployment keep the client secret in an env
+  # file and every other setting alongside the rest of its configuration. A
+  # nested block can only be passed as a single variable, secret included.
+  property oidc_issuer : String = ""
+  property oidc_client_id : String = ""
+  property oidc_client_secret : String = ""
+  property oidc_scopes : Array(String) = ["openid", "email"]
+  # Claim used as the account identity. Matched against `users.email`.
+  property oidc_claim : String = "email"
+  # Create an account on first login for anyone the provider authenticates.
+  property oidc_auto_provision : Bool = true
+  # Hide the password form, leaving single sign-on as the only way in.
+  property oidc_only : Bool = false
+  # Label shown on the login button.
+  property oidc_display_name : String = "SSO"
+  # Sign out of the provider as well, not just of Invidious.
+  property oidc_rp_logout : Bool = false
+
   property external_port : Int32? = nil
   property default_user_preferences : ConfigPreferences = ConfigPreferences.from_yaml("")
   # For compliance with DMCA, disables download widget using list of video IDs
@@ -305,6 +328,28 @@ class Config
     # See: https://github.com/iv-org/invidious/issues/3854
     if config.hmac_key.empty?
       puts "Config: 'hmac_key' is required/can't be empty"
+      exit(1)
+    end
+
+    # OIDC is all-or-nothing: a half configured provider would only fail on the
+    # first login attempt, which is a bad place to find out.
+    if !config.oidc_issuer.empty?
+      if config.oidc_client_id.empty? || config.oidc_client_secret.empty?
+        puts "Config: 'oidc_client_id' and 'oidc_client_secret' are required when 'oidc_issuer' is set"
+        exit(1)
+      end
+
+      if config.domain.try &.empty? || config.domain.nil?
+        puts "Config: 'domain' is required when 'oidc_issuer' is set, as the redirect URI is built from it"
+        exit(1)
+      end
+
+      if config.oidc_only && !config.login_enabled
+        puts "Config: 'oidc_only' with 'login_enabled: false' leaves no way to log in"
+        exit(1)
+      end
+    elsif config.oidc_only
+      puts "Config: 'oidc_only' requires 'oidc_issuer' to be set"
       exit(1)
     end
 

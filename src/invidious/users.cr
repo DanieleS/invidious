@@ -3,8 +3,12 @@ require "crypto/bcrypt/password"
 # Materialized views may not be defined using bound parameters (`$1` as used elsewhere)
 MATERIALIZED_VIEW_SQL = ->(email : String) { "SELECT cv.* FROM channel_videos cv WHERE EXISTS (SELECT subscriptions FROM users u WHERE cv.ucid = ANY (u.subscriptions) AND u.email = E'#{email.gsub({'\'' => "\\'", '\\' => "\\\\"})}') ORDER BY published DESC" }
 
-def create_user(sid, email, password)
-  password = Crypto::Bcrypt::Password.create(password, cost: 10)
+# A nil password means the account has no password at all, which is how single
+# sign-on accounts are stored: `users.password` is nullable, so this needs no
+# migration. Every code path reading that column has to cope with nil — see the
+# guard in `Routes::Login.login`.
+def create_user(sid, email, password : String?)
+  password_hash = password.try { |plaintext| Crypto::Bcrypt::Password.create(plaintext, cost: 10).to_s }
   token = Base64.urlsafe_encode(Random::Secure.random_bytes(32))
 
   user = Invidious::User.new({
@@ -13,7 +17,7 @@ def create_user(sid, email, password)
     subscriptions:     [] of String,
     email:             email,
     preferences:       Preferences.new(CONFIG.default_user_preferences.to_tuple),
-    password:          password.to_s,
+    password:          password_hash,
     token:             token,
     watched:           [] of String,
     feed_needs_update: true,
