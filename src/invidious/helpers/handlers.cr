@@ -163,3 +163,72 @@ class DenyFrame < Kemal::Handler
     call_next env
   end
 end
+
+# Serves nothing to visitors without a session when `private_instance` is on,
+# so that an instance meant for one household does not hand pages to whoever
+# finds the domain.
+#
+# This is a handler and not a `before_all` filter because a Kemal filter cannot
+# stop a route from running: `Kemal::FilterHandler` skips `call_next` only when
+# the status code left behind matches a registered error handler, so a redirect
+# written in a filter would be followed by the route writing its own body over
+# the top of it.
+class PrivateInstanceHandler < Kemal::Handler
+  # What stays reachable without a session, and why:
+  #
+  #   - the login endpoints, or there would be no way in at all;
+  #   - the assets the login page itself loads;
+  #   - the media proxy paths, which `Routes::BeforeAll` skips as well. Gating
+  #     them would mean a session lookup for every thumbnail and every chunk of
+  #     video. The trade-off is that whoever already holds one of those URLs can
+  #     still fetch that media: they are signed or carry a video id, and they
+  #     expose no page, no account and no way to browse.
+  #   - the feeds that carry a token of their own, which is how a feed reader
+  #     subscribes without a cookie.
+  PUBLIC_PREFIXES = {
+    "/login", "/oidc/", "/signout",
+    "/css/", "/js/", "/fonts/", "/assets/",
+    "/sb/", "/vi/", "/s_p/", "/yts/", "/ggpht/",
+    "/api/manifest/", "/videoplayback", "/latest_version", "/download", "/companion/",
+    "/feed/private", "/feed/playlist/", "/feed/webhook/",
+  }
+
+  PUBLIC_PATHS = {
+    "/favicon.ico", "/robots.txt", "/site.webmanifest", "/manifest.json", "/opensearch.xml",
+  }
+
+  def call(env)
+    return call_next env if !CONFIG.private_instance
+
+    path = env.request.path
+    return call_next env if PUBLIC_PATHS.includes?(path)
+    return call_next env if PUBLIC_PREFIXES.any? { |prefix| path.starts_with?(prefix) }
+    return call_next env if authenticated?(env)
+
+    # An API client has nowhere to follow a redirect to.
+    if path.starts_with?("/api/")
+      env.response.content_type = "application/json"
+      env.response.status_code = 401
+      env.response.print({"error" => "This instance is private. Please log in."}.to_json)
+      env.response.close
+      return
+    end
+
+    env.redirect "/login?referer=#{URI.encode_www_form(env.request.resource)}"
+    env.response.close
+  end
+
+  private def authenticated?(env) : Bool
+    # `AuthHandler` runs earlier and has already resolved the API token routes.
+    return true if env.get?("user")
+
+    sid = env.request.cookies["SID"]?.try &.value
+    return false if sid.nil? || sid.empty?
+
+    # A "v1:" value is an API token rather than a session, and is only ever
+    # valid on the routes `AuthHandler` covers.
+    return false if sid.starts_with?("v1:")
+
+    !Invidious::Database::SessionIDs.select_email(sid).nil?
+  end
+end
