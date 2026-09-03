@@ -219,6 +219,9 @@ add_handler FilteredCompressHandler.new
 add_handler APIHandler.new
 add_handler DisableAbusableAPIHandler.new
 add_handler AuthHandler.new
+# After AuthHandler, which resolves the API token routes: that lets the private
+# instance check accept a token without looking a session up again.
+add_handler PrivateInstanceHandler.new
 add_handler DenyFrame.new
 
 {% if compare_versions(Crystal::VERSION, "1.17.0-dev") >= 0 %}

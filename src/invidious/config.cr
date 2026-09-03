@@ -138,6 +138,11 @@ class Config
   property statistics_enabled : Bool = false
   property admins : Array(String) = [] of String
 
+  # Serve nothing at all to visitors without a session: an instance for one
+  # household rather than a public one. See `PrivateInstanceHandler` for what
+  # stays reachable and why.
+  property private_instance : Bool = false
+
   # OpenID Connect single sign-on. An empty issuer disables it entirely.
   #
   # These are deliberately flat instead of a nested `oidc:` block: the macro in
@@ -350,6 +355,12 @@ class Config
       end
     elsif config.oidc_only
       puts "Config: 'oidc_only' requires 'oidc_issuer' to be set"
+      exit(1)
+    end
+
+    # A private instance nobody can log into serves nothing to anybody.
+    if config.private_instance && !config.login_enabled
+      puts "Config: 'private_instance' with 'login_enabled: false' locks everyone out"
       exit(1)
     end
 

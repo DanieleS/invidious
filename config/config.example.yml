@@ -403,6 +403,26 @@ https_only: false
 #admins: [""]
 
 ##
+## Serve nothing at all to visitors without a session.
+##
+## Every page redirects to the login, and every API route answers 401, so an
+## instance for one household is not browsable by whoever finds the domain.
+##
+## Four groups of paths stay reachable, out of necessity: the login endpoints,
+## the assets the login page loads, the feeds that carry a token of their own,
+## and the media proxy (thumbnails, storyboards, playback, Invidious
+## companion). That last group is a deliberate trade-off: gating it would mean
+## a database lookup for every thumbnail and every chunk of video, and those
+## URLs are signed or carry a video id, expose no page and no account, and
+## offer no way to browse. Somebody who already holds one can still fetch that
+## one piece of media.
+##
+## Accepted values: true, false
+## Default: false
+##
+#private_instance: false
+
+##
 ## OpenID Connect single sign-on.
 ##
 ## Setting an issuer enables a "Sign in with ..." button on the login page.
