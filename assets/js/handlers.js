@@ -35,16 +35,16 @@
         }
     });
 
-    document.querySelectorAll('[data-mouse="switch_classes"]').forEach(function (el) {
-        var classes = el.getAttribute('data-switch-classes').split(',');
-        var classOnEnter = classes[0];
-        var classOnLeave = classes[1];
-        function toggle_classes(toAdd, toRemove) {
-            el.classList.add(toAdd);
-            el.classList.remove(toRemove);
-        }
-        el.onmouseenter = function () { toggle_classes(classOnEnter, classOnLeave); };
-        el.onmouseleave = function () { toggle_classes(classOnLeave, classOnEnter); };
+    // Scambia il simbolo dello sprite al passaggio del mouse: l'occhio aperto
+    // diventa barrato per far capire cosa fa il pulsante prima di premerlo.
+    document.querySelectorAll('[data-mouse="switch_icon"]').forEach(function (el) {
+        var icons = el.getAttribute('data-switch-icon').split(',');
+        var onEnter = icons[0];
+        var onLeave = icons[1];
+        var use = el.querySelector('use');
+        if (!use) return;
+        el.onmouseenter = function () { use.setAttribute('href', onEnter); };
+        el.onmouseleave = function () { use.setAttribute('href', onLeave); };
     });
 
     document.querySelectorAll('[data-onsubmit="return_false"]').forEach(function (el) {

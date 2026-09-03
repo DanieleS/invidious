@@ -17,16 +17,13 @@
 
 <%= rendered "components/channel_info" %>
 
-<div class="h-box">
-    <hr>
-</div>
-
 <% if error_message %>
-    <div class="h-box">
-        <p><%= error_message %></p>
+    <div class="notice notice--bad">
+        <svg class="icon notice__icon"><use href="#i-alert"/></svg>
+        <div class="notice__body"><%= error_message %></div>
     </div>
 <% else %>
-    <div class="h-box pure-g comments" id="comments">
+    <div class="comments threads" id="comments">
         <%= IV::Frontend::Comments.template_youtube(items.not_nil!, locale, thin_mode) %>
     </div>
 <% end %>

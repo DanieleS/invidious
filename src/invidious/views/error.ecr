@@ -2,7 +2,10 @@
 <title><%= "Error" %> - Invidious</title>
 <% end %>
 
-<div class="h-box">
-    <%= error_message %>
-    <%= next_steps %>
+<div class="notice notice--bad">
+    <svg class="icon notice__icon"><use href="#i-alert"/></svg>
+    <div class="notice__body">
+        <%= error_message %>
+        <%= next_steps %>
+    </div>
 </div>

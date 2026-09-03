@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= preferences.locale %>">
+<html lang="<%= preferences.locale %>" data-theme="dark">
 
 <head>
     <meta charset="utf-8">
@@ -8,13 +8,14 @@
     <%= rendered "components/player_sources" %>
     <link rel="stylesheet" href="/videojs/videojs-overlay/videojs-overlay.css?v=<%= ASSET_COMMIT %>">
     <script src="/videojs/videojs-overlay/videojs-overlay.js?v=<%= ASSET_COMMIT %>"></script>
-    <link rel="stylesheet" href="/css/default.css?v=<%= ASSET_COMMIT %>">
+    <link rel="stylesheet" href="/css/tokens.css?v=<%= ASSET_COMMIT %>">
+    <link rel="stylesheet" href="/css/base.css?v=<%= ASSET_COMMIT %>">
     <link rel="stylesheet" href="/css/embed.css?v=<%= ASSET_COMMIT %>">
     <title><%= HTML.escape(video.title) %> - Invidious</title>
     <script src="/js/_helpers.js?v=<%= ASSET_COMMIT %>"></script>
 </head>
 
-<body class="dark-theme">
+<body>
 <script id="video_data" type="application/json">
 <%=
 {

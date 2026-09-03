@@ -2,7 +2,11 @@
 <title><%= HTML.escape(hashtag) %> - Invidious</title>
 <% end %>
 
-<hr/>
-
+<div class="page-head">
+    <h1 class="page-head__title">
+        <svg class="icon icon--lg" style="vertical-align:-.15em"><use href="#i-hash"/></svg>
+        <%= HTML.escape(hashtag) %>
+    </h1>
+</div>
 
 <%= rendered "components/items_paginated" %>

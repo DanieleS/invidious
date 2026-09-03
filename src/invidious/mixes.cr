@@ -88,22 +88,22 @@ def template_mix(mix, listen)
       #{mix["title"]}
     </a>
   </h3>
-  <div class="pure-menu pure-menu-scrollable playlist-restricted">
-    <ol class="pure-menu-list">
+  <div class="playlist-widget">
+    <ol class="playlist-widget__list">
   END_HTML
 
   mix["videos"].as_a.each do |video|
     html += <<-END_HTML
-      <li class="pure-menu-item">
+      <li class="playlist-widget__item">
         <a href="/watch?v=#{video["videoId"]}&list=#{mix["mixId"]}#{listen ? "&listen=1" : ""}">
-          <div class="thumbnail">
-              <img loading="lazy" class="thumbnail" src="/vi/#{video["videoId"]}/mqdefault.jpg" alt="" />
-              <p class="length">#{recode_length_seconds(video["lengthSeconds"].as_i)}</p>
-          </div>
-          <p style="width:100%">#{video["title"]}</p>
-          <p>
-              <b style="width:100%">#{video["author"]}</b>
-          </p>
+          <span class="thumb">
+              <img loading="lazy" src="/vi/#{video["videoId"]}/mqdefault.jpg" alt="" />
+              <span class="stamp length">#{recode_length_seconds(video["lengthSeconds"].as_i)}</span>
+          </span>
+          <span class="card__text">
+              <span class="card__title">#{video["title"]}</span>
+              <span class="card__by">#{video["author"]}</span>
+          </span>
         </a>
       </li>
     END_HTML

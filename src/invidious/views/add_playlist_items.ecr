@@ -3,24 +3,23 @@
 <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed/playlist/<%= plid %>" />
 <% end %>
 
-<div class="pure-g">
-    <div class="pure-u-1 pure-u-lg-1-5"></div>
-    <div class="pure-u-1 pure-u-lg-3-5">
-        <div class="h-box">
-            <form class="pure-form pure-form-aligned" action="/add_playlist_items" method="get">
-                <legend><a href="/playlist?list=<%= playlist.id %>"><%= I18n.translate(locale, "Editing playlist `x`", %|"#{HTML.escape(playlist.title)}"|) %></a></legend>
+<form class="panel narrow--wide" style="margin-inline:auto" action="/add_playlist_items" method="get">
+    <legend>
+        <a href="/playlist?list=<%= playlist.id %>"><%= I18n.translate(locale, "Editing playlist `x`", %|"#{HTML.escape(playlist.title)}"|) %></a>
+    </legend>
 
-                <fieldset>
-                    <input class="pure-input-1" type="search" name="q"
-                      <% if query %>value="<%= HTML.escape(query.text) %>"<% end %>
-                      placeholder="<%= I18n.translate(locale, "Search for videos") %>">
-                    <input type="hidden" name="list" value="<%= plid %>">
-                </fieldset>
-            </form>
-        </div>
+    <div class="finder">
+        <svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" name="q"
+          <% if query %>value="<%= HTML.escape(query.text) %>"<% end %>
+          placeholder="<%= I18n.translate(locale, "Search for videos") %>"
+          aria-label="<%= I18n.translate(locale, "Search for videos") %>">
+        <input type="hidden" name="list" value="<%= plid %>">
+        <button type="submit" aria-label="<%= I18n.translate(locale, "Search for videos") %>">
+            <svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-r"/></svg>
+        </button>
     </div>
-    <div class="pure-u-1 pure-u-lg-1-5"></div>
-</div>
+</form>
 
 <script id="playlist_data" type="application/json">
 <%=
@@ -30,6 +29,5 @@
 %>
 </script>
 <script src="/js/playlist_widget.js?v=<%= ASSET_COMMIT %>"></script>
-
 
 <%= rendered "components/items_paginated" %>

@@ -2,23 +2,18 @@
 <title><%= I18n.translate(locale, "Clear watch history") %> - Invidious</title>
 <% end %>
 
-<div class="h-box">
-    <form class="pure-form pure-form-aligned" action="/clear_watch_history?referer=<%= URI.encode_www_form(referer) %>" method="post">
-        <legend><%= I18n.translate(locale, "Clear watch history?") %></legend>
+<form class="form narrow" action="/clear_watch_history?referer=<%= URI.encode_www_form(referer) %>" method="post">
+    <div class="form__group">
+        <legend class="form__legend"><%= I18n.translate(locale, "Clear watch history?") %></legend>
 
-        <div class="pure-g">
-            <div class="pure-u-1-2">
-                <button type="submit" name="submit" value="clear_watch_history" class="pure-button pure-button-primary">
-                    <%= I18n.translate(locale, "Yes") %>
-                </button>
-            </div>
-            <div class="pure-u-1-2">
-                <a class="pure-button" href="<%= URI.encode_www_form(referer) %>">
-                    <%= I18n.translate(locale, "No") %>
-                </a>
-            </div>
+        <div class="form__actions">
+            <button type="submit" name="submit" value="clear_watch_history" class="btn btn--danger">
+                <svg class="icon icon--sm"><use href="#i-trash"/></svg>
+                <%= I18n.translate(locale, "Yes") %>
+            </button>
+            <a class="btn" href="<%= URI.encode_www_form(referer) %>"><%= I18n.translate(locale, "No") %></a>
         </div>
 
         <input type="hidden" name="csrf_token" value="<%= HTML.escape(csrf_token) %>">
-    </form>
-</div>
+    </div>
+</form>

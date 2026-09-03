@@ -2,9 +2,17 @@
   preferences = env.get("preferences").as(Preferences)
   locale = preferences.locale
   dark_mode = preferences.dark_mode
+  current_page = env.get?("current_page").try &.as(String) || ""
+
+  # Il menu delle sezioni vive nella testata. Chi non ha effettuato l'accesso
+  # non ha iscrizioni né playlist, quindi quelle voci spariscono.
+  feed_menu = preferences.feed_menu.dup
+  if !env.get?("user")
+    feed_menu.reject! { |item| {"Subscriptions", "Playlists"}.includes? item }
+  end
 %>
 <!DOCTYPE html>
-<html lang="<%= locale %>">
+<html lang="<%= locale %>"<% if I18n.locale_is_rtl?(locale) %> dir="rtl"<% end %><% if dark_mode == "dark" || dark_mode == "light" %> data-theme="<%= dark_mode %>"<% end %>>
 
 <head>
     <meta charset="utf-8">
@@ -14,166 +22,207 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=<%= ASSET_COMMIT %>">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=<%= ASSET_COMMIT %>">
     <link rel="manifest" href="/site.webmanifest?v=<%= ASSET_COMMIT %>">
-    <link rel="mask-icon" href="/safari-pinned-tab.svg?v=<%= ASSET_COMMIT %>" color="#575757">
-    <meta name="msapplication-TileColor" content="#575757">
-    <meta name="theme-color" content="#575757">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg?v=<%= ASSET_COMMIT %>" color="#dc2a3a">
+    <meta name="msapplication-TileColor" content="#0a0d13">
+    <meta name="theme-color" content="#0a0d13">
     <link title="Invidious" type="application/opensearchdescription+xml" rel="search" href="/opensearch.xml">
-    <link rel="stylesheet" href="/css/pure-min.css?v=<%= ASSET_COMMIT %>">
-    <link rel="stylesheet" href="/css/grids-responsive-min.css?v=<%= ASSET_COMMIT %>">
-    <link rel="stylesheet" href="/css/ionicons.min.css?v=<%= ASSET_COMMIT %>">
-    <link rel="stylesheet" href="/css/default.css?v=<%= ASSET_COMMIT %>">
-    <link rel="stylesheet" href="/css/carousel.css?v=<%= ASSET_COMMIT %>">
+
+    <%
+      # I due font variabili coprono tutti i pesi che usiamo. Precaricati
+      # perché il testo li aspetta: senza, la pagina disegna due volte.
+    %>
+    <link rel="preload" href="/fonts/figtree-latin.woff2?v=<%= ASSET_COMMIT %>" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/archivo-latin.woff2?v=<%= ASSET_COMMIT %>" as="font" type="font/woff2" crossorigin>
+
+    <link rel="stylesheet" href="/css/tokens.css?v=<%= ASSET_COMMIT %>">
+    <link rel="stylesheet" href="/css/base.css?v=<%= ASSET_COMMIT %>">
+    <link rel="stylesheet" href="/css/layout.css?v=<%= ASSET_COMMIT %>">
+    <link rel="stylesheet" href="/css/components.css?v=<%= ASSET_COMMIT %>">
+
+    <%
+      # Lo script del tema è deliberatamente bloccante e deliberatamente qui, in
+      # <head>: niente viene disegnato finché non è stato valutato, quindi
+      # l'attributo data-theme è già al suo posto al primo fotogramma e non si
+      # vede il lampo di tema sbagliato.
+      # Ordine di precedenza:
+      # 1. la preferenza salvata sul server (cookie PREFS o account) — già
+      # stampata sull'<html> qui sopra, quindi non tocca nemmeno il DOM;
+      # 2. la scelta fatta in questa sessione, in localStorage;
+      # 3. l'impostazione del sistema operativo.
+      # Senza JavaScript non serve nulla di tutto questo: il caso 1 è già
+      # nell'HTML e il caso 3 è coperto dalla media query in tokens.css.
+    %>
+    <script>
+    (function () {
+        var root = document.documentElement;
+        var served = root.getAttribute('data-theme');
+        if (served === 'dark' || served === 'light') {
+            try { localStorage.setItem('dark_mode', served); } catch (e) {}
+            return;
+        }
+        var stored = null;
+        try { stored = localStorage.getItem('dark_mode'); } catch (e) {}
+        if (stored === 'dark' || stored === 'light') {
+            root.setAttribute('data-theme', stored);
+            return;
+        }
+        root.setAttribute('data-theme',
+            window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        root.setAttribute('data-theme-auto', '');
+    })();
+    </script>
+
     <script src="/js/_helpers.js?v=<%= ASSET_COMMIT %>"></script>
 </head>
 
-<body class="<%= dark_mode.blank? ? "no" : dark_mode %>-theme">
-    <span style="display:none" id="dark_mode_pref"><%= dark_mode %></span>
-    <div class="pure-g">
-        <div class="pure-u-1 pure-u-xl-20-24" id="contents">
-            <div class="pure-g navbar h-box">
-                <% if navbar_search %>
-                    <div class="pure-u-1 pure-u-md-4-24">
-                        <a href="/" class="index-link pure-menu-heading">Invidious</a>
-                    </div>
-                    <div class="pure-u-1 pure-u-md-12-24 searchbar">
-                        <% autofocus = false %><%= rendered "components/search_box" %>
-                    </div>
+<body>
+    <%= rendered "components/icons" %>
+
+    <a class="skip-to-content" href="#main"><%= I18n.translate(locale, "Skip to content") %></a>
+
+    <div class="frame">
+        <header class="masthead">
+            <div class="shell masthead__in">
+                <a class="wordmark" href="/">
+                    <svg class="wordmark__lens" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="var(--accent)"/>
+                        <path d="M9.4 7.6v8.8l7-4.4z" fill="var(--accent-on)"/>
+                    </svg>
+                    Invidious
+                </a>
+
+                <% if !feed_menu.empty? %>
+                    <nav class="nav" aria-label="<%= I18n.translate(locale, "preferences_feed_menu_label") %>">
+                        <% feed_menu.each do |feed| %>
+                            <%
+                              feed_path = "/feed/#{feed.downcase}"
+                              feed_icon = case feed
+                                          when "Popular"       then "i-fire"
+                                          when "Trending"      then "i-trend"
+                                          when "Subscriptions" then "i-star"
+                                          when "Playlists"     then "i-list"
+                                          when "History"       then "i-clock"
+                                          else                      "i-search"
+                                          end
+                            %>
+                            <a class="nav__item" href="<%= feed_path %>"<% if current_page.starts_with?(feed_path) %> aria-current="page"<% end %>>
+                                <svg class="icon icon--sm"><use href="#<%= feed_icon %>"/></svg>
+                                <%= I18n.translate(locale, feed) %>
+                            </a>
+                        <% end %>
+                    </nav>
                 <% end %>
 
-                <div class="pure-u-1 pure-u-md-8-24 user-field">
+                <% if navbar_search %>
+                    <% autofocus = false %><%= rendered "components/search_box" %>
+                <% end %>
+
+                <div class="masthead__tools">
+                    <a id="toggle_theme" class="iconbtn" href="/toggle_theme?referer=<%= env.get?("current_page") %>" title="<%= I18n.translate(locale, "toggle_theme") %>">
+                        <svg class="icon" id="toggle_theme_icon"><use href="#i-sun"/></svg>
+                        <span class="sr-only"><%= I18n.translate(locale, "toggle_theme") %></span>
+                    </a>
+
                     <% if env.get? "user" %>
-                        <div class="pure-u-1-4">
-                            <a id="toggle_theme" href="/toggle_theme?referer=<%= env.get?("current_page") %>" class="pure-menu-heading" title="<%= I18n.translate(locale, "toggle_theme") %>">
-                                <% if dark_mode == "dark" %>
-                                    <i class="icon ion-ios-sunny"></i>
-                                <% else %>
-                                    <i class="icon ion-ios-moon"></i>
-                                <% end %>
-                            </a>
-                        </div>
-                        <div class="pure-u-1-4">
-                            <a id="notification_ticker" title="<%= I18n.translate(locale, "Subscriptions") %>" href="/feed/subscriptions" class="pure-menu-heading">
-                                <% notification_count = env.get("user").as(Invidious::User).notifications.size %>
-                                <% if CONFIG.enable_user_notifications && notification_count > 0 %>
-                                    <span id="notification_count"><%= notification_count %></span> <i class="icon ion-ios-notifications"></i>
-                                <% else %>
-                                    <i class="icon ion-ios-notifications-outline"></i>
-                                <% end %>
-                            </a>
-                        </div>
-                        <div class="pure-u-1-4">
-                            <a title="<%= I18n.translate(locale, "Preferences") %>" href="/preferences?referer=<%= env.get?("current_page") %>" class="pure-menu-heading">
-                                <i class="icon ion-ios-cog"></i>
-                            </a>
-                        </div>
-                        <% if env.get("preferences").as(Preferences).show_nick %>
-                            <div class="pure-u-1-4" style="overflow: hidden; white-space: nowrap;">
-                                <span id="user_name"><%= HTML.escape(env.get("user").as(Invidious::User).email) %></span>
-                            </div>
+                        <a id="notification_ticker" class="iconbtn" title="<%= I18n.translate(locale, "Subscriptions") %>" href="/feed/subscriptions">
+                            <% notification_count = env.get("user").as(Invidious::User).notifications.size %>
+                            <% if CONFIG.enable_user_notifications && notification_count > 0 %>
+                                <svg class="icon"><use href="#i-bell"/></svg>
+                                <span class="iconbtn__badge" id="notification_count"><%= notification_count %></span>
+                            <% else %>
+                                <svg class="icon"><use href="#i-bell-off"/></svg>
+                            <% end %>
+                        </a>
+                    <% end %>
+
+                    <a class="iconbtn" title="<%= I18n.translate(locale, "Preferences") %>" href="/preferences?referer=<%= env.get?("current_page") %>">
+                        <svg class="icon"><use href="#i-cog"/></svg>
+                        <span class="sr-only"><%= I18n.translate(locale, "Preferences") %></span>
+                    </a>
+
+                    <% if env.get? "user" %>
+                        <% if preferences.show_nick %>
+                            <span class="masthead__user" id="user_name"><%= HTML.escape(env.get("user").as(Invidious::User).email) %></span>
                         <% end %>
-                        <div class="pure-u-1-4">
-                            <form action="/signout?referer=<%= env.get?("current_page") %>" method="post">
-                                <input type="hidden" name="csrf_token" value="<%= HTML.escape(env.get?("csrf_token").try &.as(String) || "") %>">
-                                <a class="pure-menu-heading" href="#">
-                                    <input style="all:unset" type="submit" value="<%= I18n.translate(locale, "Log out") %>">
-                                </a>
-                            </form>
-                        </div>
-                    <% else %>
-                        <div class="pure-u-1-3">
-                            <a id="toggle_theme" href="/toggle_theme?referer=<%= env.get?("current_page") %>" class="pure-menu-heading" title="<%= I18n.translate(locale, "toggle_theme") %>">
-                                <% if dark_mode == "dark" %>
-                                    <i class="icon ion-ios-sunny"></i>
-                                <% else %>
-                                    <i class="icon ion-ios-moon"></i>
-                                <% end %>
-                            </a>
-                        </div>
-                        <div class="pure-u-1-3">
-                            <a title="<%= I18n.translate(locale, "Preferences") %>" href="/preferences?referer=<%= env.get?("current_page") %>" class="pure-menu-heading">
-                                <i class="icon ion-ios-cog"></i>
-                            </a>
-                        </div>
-                        <% if CONFIG.login_enabled %>
-                            <div class="pure-u-1-3">
-                                <a href="/login?referer=<%= env.get?("current_page") %>" class="pure-menu-heading">
-                                    <%= I18n.translate(locale, "Log in") %>
-                                </a>
-                            </div>
-                        <% end %>
+                        <form action="/signout?referer=<%= env.get?("current_page") %>" method="post">
+                            <input type="hidden" name="csrf_token" value="<%= HTML.escape(env.get?("csrf_token").try &.as(String) || "") %>">
+                            <button type="submit" class="iconbtn" title="<%= I18n.translate(locale, "Log out") %>">
+                                <svg class="icon"><use href="#i-exit"/></svg>
+                                <span class="sr-only"><%= I18n.translate(locale, "Log out") %></span>
+                            </button>
+                        </form>
+                    <% elsif CONFIG.login_enabled %>
+                        <a class="btn btn--sm" href="/login?referer=<%= env.get?("current_page") %>">
+                            <%= I18n.translate(locale, "Log in") %>
+                        </a>
                     <% end %>
                 </div>
             </div>
+        </header>
 
-            <% if CONFIG.banner %>
-                <div class="h-box">
-                    <h3><%= CONFIG.banner %></h3>
-                </div>
-            <% end %>
+        <% if CONFIG.banner %>
+            <div class="banner"><div class="shell"><%= CONFIG.banner %></div></div>
+        <% end %>
 
+        <main id="main" class="shell page">
             <%= content %>
+        </main>
 
-            <footer>
-                <div class="pure-g">
-                    <div class="pure-u-1 pure-u-md-1-3">
-                        <span>
-                            <i class="icon ion-logo-github"></i>
+        <footer class="footer">
+            <div class="shell footer__in">
+                <div class="footer__col">
+                    <span class="footer__line">
+                        <svg class="icon icon--sm"><use href="#i-github"/></svg>
                         <% if CONFIG.modified_source_code_url %>
-                            <a href="https://github.com/iv-org/invidious"><%= I18n.translate(locale, "footer_original_source_code") %></a>&nbsp;/
+                            <a href="https://github.com/iv-org/invidious"><%= I18n.translate(locale, "footer_original_source_code") %></a>
+                            <span>/</span>
                             <a href="<%= CONFIG.modified_source_code_url %>"><%= I18n.translate(locale, "footer_modfied_source_code") %></a>
                         <% else %>
                             <a href="https://github.com/iv-org/invidious"><%= I18n.translate(locale, "footer_source_code") %></a>
                         <% end %>
-                        </span>
-                        <span>
-                            <i class="icon ion-ios-paper"></i>
-                            <a href="https://github.com/iv-org/documentation"><%= I18n.translate(locale, "footer_documentation") %></a>
-                        </span>
-                    </div>
-
-                    <div class="pure-u-1 pure-u-md-1-3">
-                        <span>
-                            <a href="https://github.com/iv-org/invidious/blob/master/LICENSE"><%= I18n.translate(locale, "Released under the AGPLv3 on Github.") %></a>
-                        </span>
-                        <span>
-                            <i class="icon ion-logo-javascript"></i>
-                            <a rel="jslicense" href="/licenses"><%= I18n.translate(locale, "View JavaScript license information.") %></a>
-                        </span>
-                        <span>
-                            <i class="icon ion-ios-paper"></i>
-                            <a href="/privacy"><%= I18n.translate(locale, "View privacy policy.") %></a>
-                        </span>
-                    </div>
-
-                    <div class="pure-u-1 pure-u-md-1-3">
-                        <span>
-                            <i class="icon ion-ios-wallet"></i>
-                            <a href="https://invidious.io/donate/"><%= I18n.translate(locale, "footer_donate_page") %></a>
-                        </span>
-                        <span>
-                            <%= I18n.translate(locale, "Current version: ") %>
-                            <% if CONFIG.modified_source_code_url %>
-                                <a href="<%= CONFIG.modified_source_code_url %>/commit/<%= CURRENT_COMMIT %>"><%= CURRENT_VERSION %>-<%= CURRENT_COMMIT %></a>
-                            <% else %>
-                                <a href="https://github.com/iv-org/invidious/commit/<%= CURRENT_COMMIT %>"><%= CURRENT_VERSION %>-<%= CURRENT_COMMIT %></a>
-                            <% end %>
-                            @ <%= CURRENT_BRANCH %>
-                            <% if CURRENT_TAG != "" %>
-                            (
-                                <% if CONFIG.modified_source_code_url %>
-                                    <a href="<%= CONFIG.modified_source_code_url %>/releases/tag/<%= CURRENT_TAG %>"><%= CURRENT_TAG %></a>
-                                <% else %>
-                                    <a href="https://github.com/iv-org/invidious/releases/tag/<%= CURRENT_TAG %>"><%= CURRENT_TAG %></a>
-                                <% end %>
-                            )
-                            <% end %>
-                        </span>
-                    </div>
+                    </span>
+                    <span class="footer__line">
+                        <svg class="icon icon--sm"><use href="#i-doc"/></svg>
+                        <a href="https://github.com/iv-org/documentation"><%= I18n.translate(locale, "footer_documentation") %></a>
+                    </span>
                 </div>
-            </footer>
 
-        </div>
+                <div class="footer__col">
+                    <span class="footer__line">
+                        <a href="https://github.com/iv-org/invidious/blob/master/LICENSE"><%= I18n.translate(locale, "Released under the AGPLv3 on Github.") %></a>
+                    </span>
+                    <span class="footer__line">
+                        <svg class="icon icon--sm"><use href="#i-js"/></svg>
+                        <a rel="jslicense" href="/licenses"><%= I18n.translate(locale, "View JavaScript license information.") %></a>
+                    </span>
+                    <span class="footer__line">
+                        <svg class="icon icon--sm"><use href="#i-doc"/></svg>
+                        <a href="/privacy"><%= I18n.translate(locale, "View privacy policy.") %></a>
+                    </span>
+                </div>
+
+                <div class="footer__col">
+                    <span class="footer__line">
+                        <svg class="icon icon--sm"><use href="#i-wallet"/></svg>
+                        <a href="https://invidious.io/donate/"><%= I18n.translate(locale, "footer_donate_page") %></a>
+                    </span>
+                    <span class="footer__line num">
+                        <%= I18n.translate(locale, "Current version: ") %>
+                        <% if CONFIG.modified_source_code_url %>
+                            <a href="<%= CONFIG.modified_source_code_url %>/commit/<%= CURRENT_COMMIT %>"><%= CURRENT_VERSION %>-<%= CURRENT_COMMIT %></a>
+                        <% else %>
+                            <a href="https://github.com/iv-org/invidious/commit/<%= CURRENT_COMMIT %>"><%= CURRENT_VERSION %>-<%= CURRENT_COMMIT %></a>
+                        <% end %>
+                        @ <%= CURRENT_BRANCH %>
+                        <% if CURRENT_TAG != "" %>
+                            (<% if CONFIG.modified_source_code_url %><a href="<%= CONFIG.modified_source_code_url %>/releases/tag/<%= CURRENT_TAG %>"><%= CURRENT_TAG %></a><% else %><a href="https://github.com/iv-org/invidious/releases/tag/<%= CURRENT_TAG %>"><%= CURRENT_TAG %></a><% end %>)
+                        <% end %>
+                    </span>
+                </div>
+            </div>
+        </footer>
     </div>
+
     <script src="/js/handlers.js?v=<%= ASSET_COMMIT %>"></script>
     <script src="/js/themes.js?v=<%= ASSET_COMMIT %>"></script>
     <% if env.get? "user" %>

@@ -24,7 +24,7 @@ module Invidious::Frontend::WatchPage
     end
 
     if CONFIG.dmca_content.includes?(video.id)
-      return "<p id=\"download\">#{I18n.translate(locale, "dmca_content")}</p>"
+      return "<p id=\"download\" class=\"notice\">#{I18n.translate(locale, "dmca_content")}</p>"
     end
 
     url = "/download"
@@ -35,7 +35,7 @@ module Invidious::Frontend::WatchPage
 
     return String.build(4000) do |str|
       str << "<form"
-      str << " class=\"pure-form pure-form-stacked\""
+      str << " class=\"panel panel--tight\""
       str << " action='" << HTML.escape(url) << "'"
       str << " method='post'"
       str << " rel='noopener noreferrer'"
@@ -46,7 +46,7 @@ module Invidious::Frontend::WatchPage
       str << "<input type='hidden' name='id' value='" << video.id << "'/>\n"
       str << "<input type='hidden' name='title' value='" << HTML.escape(video.title) << "'/>\n"
 
-      str << "\t<div class=\"pure-control-group\">\n"
+      str << "\t<div class=\"field field--stack\">\n"
 
       str << "\t\t<label for='download_widget'>"
       str << I18n.translate(locale, "Download as: ")
@@ -107,8 +107,9 @@ module Invidious::Frontend::WatchPage
       str << "\t\t</select>\n"
       str << "\t</div>\n"
 
-      str << "\t<button type=\"submit\" class=\"pure-button pure-button-primary\">\n"
-      str << "\t\t<b>" << I18n.translate(locale, "Download") << "</b>\n"
+      str << "\t<button type=\"submit\" class=\"btn btn--accent\">\n"
+      str << "\t\t<svg class=\"icon icon--sm\"><use href=\"#i-save\"/></svg>\n"
+      str << "\t\t" << I18n.translate(locale, "Download") << '\n'
       str << "\t</button>\n"
 
       str << "</form>\n"

@@ -24,22 +24,14 @@ module Invidious::Frontend::ChannelPage
         tab_name = tab.to_s.downcase
 
         if channel.tabs.includes? tab_name
-          str << %(<div class="pure-u-1 pure-md-1-3">\n)
+          # Video tab doesn't have the last path component
+          url = tab.videos? ? base_url : "#{base_url}/#{tab_name}"
 
-          if tab == selected_tab
-            str << "\t<b>"
-            str << I18n.translate(locale, "channel_tab_#{tab_name}_label")
-            str << "</b>\n"
-          else
-            # Video tab doesn't have the last path component
-            url = tab.videos? ? base_url : "#{base_url}/#{tab_name}"
-
-            str << %(\t<a href=") << url << %(">)
-            str << I18n.translate(locale, "channel_tab_#{tab_name}_label")
-            str << "</a>\n"
-          end
-
-          str << "</div>"
+          str << %(<a class="pill" href=") << url << '"'
+          str << %( aria-current="page") if tab == selected_tab
+          str << '>'
+          str << I18n.translate(locale, "channel_tab_#{tab_name}_label")
+          str << "</a>\n"
         end
       end
     end

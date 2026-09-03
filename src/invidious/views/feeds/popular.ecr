@@ -9,12 +9,14 @@
 </title>
 <% end %>
 
-<%= rendered "components/feed_menu" %>
+<div class="page-head">
+    <h1 class="page-head__title"><%= I18n.translate(locale, "Popular") %></h1>
+</div>
 
-<div class="pure-g">
+<div class="grid">
 <% popular_videos.each do |item| %>
     <%= rendered "components/item" %>
 <% end %>
 </div>
 
-<script src="/js/watched_indicator.js"></script>
+<script src="/js/watched_indicator.js?v=<%= ASSET_COMMIT %>"></script>

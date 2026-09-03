@@ -1,18 +1,20 @@
 <% if user %>
     <% if subscriptions.includes? ucid %>
-            <form action="/subscription_ajax?action=remove_subscriptions&c=<%= ucid %>&referer=<%= env.get("current_page") %>" method="post">
-                <input type="hidden" name="csrf_token" value="<%= HTML.escape(env.get?("csrf_token").try &.as(String) || "") %>">
-                <button data-type="unsubscribe" id="subscribe" class="pure-button pure-button-primary">
-                    <b><input style="all:unset" type="submit" value="<%= I18n.translate(locale, "Unsubscribe") %> | <%= sub_count_text %>"></b>
-                </button>
-            </form>
+        <form action="/subscription_ajax?action=remove_subscriptions&c=<%= ucid %>&referer=<%= env.get("current_page") %>" method="post">
+            <input type="hidden" name="csrf_token" value="<%= HTML.escape(env.get?("csrf_token").try &.as(String) || "") %>">
+            <button type="submit" data-type="unsubscribe" id="subscribe" class="btn">
+                <svg class="icon icon--sm"><use href="#i-bell"/></svg>
+                <%= I18n.translate(locale, "Unsubscribe") %> | <%= sub_count_text %>
+            </button>
+        </form>
     <% else %>
-            <form action="/subscription_ajax?action=create_subscription_to_channel&c=<%= ucid %>&referer=<%= env.get("current_page") %>" method="post">
-                <input type="hidden" name="csrf_token" value="<%= HTML.escape(env.get?("csrf_token").try &.as(String) || "") %>">
-                <button data-type="subscribe" id="subscribe" class="pure-button pure-button-primary">
-                    <b><input style="all:unset" type="submit" value="<%= I18n.translate(locale, "Subscribe") %> | <%= sub_count_text %>"></b>
-                </button>
-            </form>
+        <form action="/subscription_ajax?action=create_subscription_to_channel&c=<%= ucid %>&referer=<%= env.get("current_page") %>" method="post">
+            <input type="hidden" name="csrf_token" value="<%= HTML.escape(env.get?("csrf_token").try &.as(String) || "") %>">
+            <button type="submit" data-type="subscribe" id="subscribe" class="btn btn--accent">
+                <svg class="icon icon--sm"><use href="#i-bell-off"/></svg>
+                <%= I18n.translate(locale, "Subscribe") %> | <%= sub_count_text %>
+            </button>
+        </form>
     <% end %>
 
     <script id="subscribe_data" type="application/json">
@@ -29,8 +31,8 @@
     </script>
     <script src="/js/subscribe_widget.js?v=<%= ASSET_COMMIT %>"></script>
 <% else %>
-        <a id="subscribe" class="pure-button pure-button-primary"
-            href="/login?referer=<%= env.get("current_page") %>">
-            <b><%= I18n.translate(locale, "Subscribe") %> | <%= sub_count_text %></b>
-        </a>
+    <a id="subscribe" class="btn btn--accent" href="/login?referer=<%= env.get("current_page") %>">
+        <svg class="icon icon--sm"><use href="#i-bell-off"/></svg>
+        <%= I18n.translate(locale, "Subscribe") %> | <%= sub_count_text %>
+    </a>
 <% end %>

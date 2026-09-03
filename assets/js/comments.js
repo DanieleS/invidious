@@ -1,6 +1,6 @@
 var video_data = JSON.parse(document.getElementById('video_data').textContent);
 
-var spinnerHTML = '<h3 style="text-align:center"><div class="loading"><i class="icon ion-ios-refresh"></i></div></h3>';
+var spinnerHTML = '<div class="loading"><svg class="icon"><use href="#i-refresh"/></svg></div>';
 var spinnerHTMLwithHR = spinnerHTML + '<hr>';
 
 String.prototype.supplant = function (o) {
@@ -71,7 +71,7 @@ function get_youtube_comments() {
     var onNon200 = function (xhr) {
         if (!video_data.comments_enabled) {
             comments.innerHTML = `
-            <div id="comments-turned-off-on-video-message" class="h-box v-box">
+            <div id="comments-turned-off-on-video-message" class="panel">
                 <p><b>${video_data.comments_youtube_disabled_text}</b></p>
 
                 <p><b><button href="javascript:void(0)" data-comments="reddit" id="try-reddit-comments-link" class="simulated_a">

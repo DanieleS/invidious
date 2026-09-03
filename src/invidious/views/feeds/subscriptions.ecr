@@ -3,49 +3,34 @@
 <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed/private?token=<%= token %>" />
 <% end %>
 
-<%= rendered "components/feed_menu" %>
-
-<div class="pure-g h-box">
-    <div class="pure-u-1-3">
-        <h3>
-            <a href="/subscription_manager"><%= I18n.translate(locale, "Manage subscriptions") %></a>
-        </h3>
-    </div>
-    <div class="pure-u-1-3">
-        <h3 style="text-align:center">
-            <a href="/feed/history"><%= I18n.translate(locale, "Watch history") %></a>
-        </h3>
-    </div>
-    <div class="pure-u-1-3">
-        <h3 style="text-align:right">
-            <a href="/feed/private?token=<%= token %>"><i class="icon ion-logo-rss"></i></a>
-        </h3>
-    </div>
+<div class="page-head">
+    <h1 class="page-head__title"><%= I18n.translate(locale, "Subscriptions") %></h1>
+    <a class="btn btn--sm" href="/subscription_manager">
+        <svg class="icon icon--sm"><use href="#i-star"/></svg>
+        <%= I18n.translate(locale, "Manage subscriptions") %>
+    </a>
+    <a class="btn btn--sm" href="/feed/history">
+        <svg class="icon icon--sm"><use href="#i-clock"/></svg>
+        <%= I18n.translate(locale, "Watch history") %>
+    </a>
+    <a class="iconbtn" href="/feed/private?token=<%= token %>" title="RSS">
+        <svg class="icon"><use href="#i-rss"/></svg>
+        <span class="sr-only">RSS</span>
+    </a>
 </div>
 
 <% if CONFIG.enable_user_notifications %>
+    <p class="page-head__note"><%= I18n.translate_count(locale, "subscriptions_unseen_notifs_count", notifications.size) %></p>
 
-<center>
-    <%= I18n.translate_count(locale, "subscriptions_unseen_notifs_count", notifications.size) %>
-</center>
-
-<% if !notifications.empty? %>
-    <div class="h-box">
+    <% if !notifications.empty? %>
+        <div class="grid">
+        <% notifications.each do |item| %>
+            <%= rendered "components/item" %>
+        <% end %>
+        </div>
         <hr>
-    </div>
+    <% end %>
 <% end %>
-
-<div class="pure-g">
-<% notifications.each do |item| %>
-    <%= rendered "components/item" %>
-<% end %>
-</div>
-
-<% end %>
-
-<div class="h-box">
-    <hr>
-</div>
 
 <script id="watched_data" type="application/json">
 <%=
@@ -54,16 +39,15 @@
 }.to_pretty_json
 %>
 </script>
-<script src="/js/watched_widget.js"></script>
+<script src="/js/watched_widget.js?v=<%= ASSET_COMMIT %>"></script>
 
-
-<div class="pure-g">
+<div class="grid">
 <% videos.each do |item| %>
     <%= rendered "components/item" %>
 <% end %>
 </div>
 
-<script src="/js/watched_indicator.js"></script>
+<script src="/js/watched_indicator.js?v=<%= ASSET_COMMIT %>"></script>
 
 <%=
   IV::Frontend::Pagination.nav_numeric(locale,

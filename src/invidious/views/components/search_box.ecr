@@ -1,20 +1,18 @@
 <%
-	search_privacy = preferences.search_privacy
-%>
+  search_privacy = preferences.search_privacy
 
-<% if search_privacy %>
-<form class="pure-form" action="/search" method="post">
-<% else %>
-<form class="pure-form" action="/search" method="get">
-<% end %>
-	<fieldset>
-		<input type="search" id="searchbox" autocorrect="off"
-		autocapitalize="none" spellcheck="false" <% if autofocus %>autofocus<% end %>
-		name="q" placeholder="<%= I18n.translate(locale, "search") %>"
-		title="<%= I18n.translate(locale, "search") %>"
-		value="<%= env.get?("search").try {|x| HTML.escape(x.as(String)) } %>">
-	</fieldset>
-	<button type="submit" id="searchbutton" aria-label="<%= I18n.translate(locale, "search") %>">
-		<i class="icon ion-ios-search"></i>
-	</button>
+  # `autofocus` è vero solo sulla pagina dedicata alla ricerca, dove il campo
+  # è il contenuto principale e non un accessorio della testata.
+  finder_class = autofocus ? "finder finder--hero" : "finder"
+%>
+<form class="<%= finder_class %>" action="/search" method="<%= search_privacy ? "post" : "get" %>" role="search">
+    <svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+    <input type="search" id="searchbox" autocorrect="off"
+        autocapitalize="none" spellcheck="false"<% if autofocus %> autofocus<% end %>
+        name="q" placeholder="<%= I18n.translate(locale, "search") %>"
+        aria-label="<%= I18n.translate(locale, "search") %>"
+        value="<%= env.get?("search").try {|x| HTML.escape(x.as(String)) } %>">
+    <button type="submit" id="searchbutton" aria-label="<%= I18n.translate(locale, "search") %>">
+        <svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-r"/></svg>
+    </button>
 </form>

@@ -1,0 +1,383 @@
+/*
+ * layout.css — la struttura della pagina: testata, contenitore, griglie, piè
+ * di pagina. Tutto con flex/grid e `gap`, mai con margini per elemento: i
+ * margini collassano e si sommano, il gap no.
+ */
+
+/* --------------------------------------------------------------------------
+ * Contenitore
+ * ------------------------------------------------------------------------ */
+.shell {
+  width: 100%;
+  max-width: var(--shell);
+  margin-inline: auto;
+  padding-inline: var(--s-5);
+}
+
+/* La pagina è una colonna alta almeno quanto lo schermo, così il piè di pagina
+   resta in fondo anche sulle pagine corte. */
+.frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page {
+  flex: 1 0 auto;
+  padding-block: var(--s-5) var(--s-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.skip-to-content {
+  position: absolute;
+  top: var(--s-2);
+  left: var(--s-2);
+  z-index: 100;
+  padding: var(--s-2) var(--s-4);
+  background: var(--accent);
+  color: var(--accent-on);
+  border-radius: var(--r-ctrl);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+.skip-to-content:focus {
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+ * Testata
+ * ------------------------------------------------------------------------ */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bg-blur);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* Senza backdrop-filter la testata deve restare opaca, o il contenuto le
+   scorre sotto in chiaro. */
+@supports not (backdrop-filter: blur(1px)) {
+  .masthead {
+    background: var(--bg);
+  }
+}
+
+.masthead__in {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  height: 62px;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-stretch: 116%;
+  font-size: 1.1875rem;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+.wordmark:hover {
+  text-decoration: none;
+}
+.wordmark__lens {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.nav {
+  display: flex;
+  gap: var(--s-1);
+  flex: none;
+}
+
+.nav__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border: 1px solid transparent;
+  border-radius: 99px;
+  color: var(--text-2);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.nav__item:hover {
+  background: var(--surface-hi);
+  color: var(--text);
+  text-decoration: none;
+}
+.nav__item[aria-current="page"] {
+  background: var(--surface-hi);
+  border-color: var(--line);
+  color: var(--text);
+}
+.nav__item[aria-current="page"] .icon {
+  color: var(--accent-text);
+}
+
+.masthead__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  flex: none;
+  margin-inline-start: auto;
+}
+
+.masthead__user {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--t-sm);
+  color: var(--text-2);
+  padding-inline: var(--s-2);
+}
+
+/* --------------------------------------------------------------------------
+ * Ricerca nella testata
+ * ------------------------------------------------------------------------ */
+.finder {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 620px;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 38px;
+  padding-inline: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctrl);
+  color: var(--text-3);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.finder:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.finder input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  color: var(--text);
+}
+.finder input[type="search"]:focus {
+  border: 0;
+  box-shadow: none;
+}
+.finder button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-chip);
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.finder button:hover {
+  color: var(--text);
+}
+
+/* La ricerca a tutta pagina, quando la testata non ne ha una. */
+.finder--hero {
+  max-width: 660px;
+  height: 52px;
+  margin-inline: auto;
+  font-size: var(--t-md);
+  border-radius: var(--r-panel);
+}
+
+/* --------------------------------------------------------------------------
+ * Griglie di contenuti
+ * ------------------------------------------------------------------------ */
+
+/* Una sola dichiarazione, e nessun template deve più sapere quante colonne
+   ci sono a ciascuna larghezza. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: var(--s-5) var(--s-4);
+}
+
+/* Elenco verticale di righe compatte: correlati, risultati, cronologia. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.stack--tight {
+  gap: var(--s-3);
+}
+
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+/* --------------------------------------------------------------------------
+ * Intestazioni di pagina e di sezione
+ * ------------------------------------------------------------------------ */
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.page-head__title {
+  font-size: var(--t-xl);
+  font-weight: 700;
+  margin-inline-end: auto;
+}
+
+.page-head__note {
+  color: var(--text-3);
+  font-size: var(--t-sm);
+}
+
+.sect {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.sect__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.sect__title {
+  font-size: var(--t-lg);
+}
+
+/* --------------------------------------------------------------------------
+ * Colonne della pagina video
+ * ------------------------------------------------------------------------ */
+.watch-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-6);
+  align-items: start;
+}
+
+@media (min-width: 1120px) {
+  .watch-cols {
+    grid-template-columns: minmax(0, 1fr) 372px;
+  }
+}
+
+/* Pagine di modulo strette: accesso, crea playlist, conferme. */
+.narrow {
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+}
+
+.narrow--wide {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+/* --------------------------------------------------------------------------
+ * Piè di pagina
+ * ------------------------------------------------------------------------ */
+.footer {
+  flex: none;
+  border-top: 1px solid var(--line-soft);
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: var(--t-sm);
+}
+
+.footer__in {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--s-4) var(--s-6);
+  padding-block: var(--s-6);
+}
+
+.footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.footer a {
+  color: var(--text-2);
+}
+.footer a:hover {
+  color: var(--text);
+}
+
+.footer__line {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+/* --------------------------------------------------------------------------
+ * Adattamento a schermi stretti
+ * ------------------------------------------------------------------------ */
+@media (max-width: 1000px) {
+  .nav {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .shell {
+    padding-inline: var(--s-4);
+  }
+
+  .masthead__in {
+    height: auto;
+    padding-block: var(--s-3);
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+
+  .finder {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .masthead__user {
+    display: none;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--s-4) var(--s-3);
+  }
+
+  .page {
+    padding-block: var(--s-4) var(--s-7);
+  }
+}

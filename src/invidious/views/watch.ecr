@@ -87,126 +87,137 @@ we're going to need to do it here in order to allow for translations.
 %>
 </script>
 
-<div id="player-container" class="h-box">
+<div id="player-container" class="player-shell">
     <%= rendered "components/player" %>
 </div>
 
-<div class="h-box">
-    <h1>
-        <%= title %>
-        <% if params.listen %>
-            <a title="<%=I18n.translate(locale, "Video mode")%>" id="link-iv-listen" data-base-url="/watch?<%= env.params.query %>&listen=0" href="/watch?<%= env.params.query %>&listen=0">
-                <i class="icon ion-ios-videocam"></i>
-            </a>
-        <% else %>
-            <a title="<%=I18n.translate(locale, "Audio mode")%>" id="link-iv-listen" data-base-url="/watch?<%= env.params.query %>&listen=1" href="/watch?<%= env.params.query %>&listen=1">
-                <i class="icon ion-md-headset"></i>
-            </a>
-        <% end %>
-    </h1>
+<div class="watch-cols">
+    <div class="stack">
+        <%-
+            link_yt_watch = URI.new(scheme: "https", host: "www.youtube.com", path: "/watch", query: "v=#{video.id}")
+            link_yt_embed = URI.new(scheme: "https", host: "www.youtube.com", path: "/embed/#{video.id}")
 
-    <% if !video.is_listed %>
-        <h3>
-            <i class="icon ion-ios-unlock"></i> <%= I18n.translate(locale, "Unlisted") %>
-        </h3>
-    <% end %>
+            if !plid.nil? && !continuation.nil?
+                link_yt_param = URI::Params{"list" => [plid], "index" => [continuation.to_s]}
+                link_yt_watch = IV::HttpServer::Utils.add_params_to_url(link_yt_watch, link_yt_param)
+                link_yt_embed = IV::HttpServer::Utils.add_params_to_url(link_yt_embed, link_yt_param)
+            end
 
-    <% if video.reason %>
-        <h3>
-            <%= video.reason %>
-        </h3>
-    <% elsif video.premiere_timestamp.try &.> Time.utc %>
-        <h3>
-            <%= video.premiere_timestamp.try { |t| I18n.translate(locale, "Premieres in `x`", recode_date((t - Time.utc).ago, locale)) } %>
-        </h3>
-    <% elsif video.live_now %>
-        <h3>
-            <%= video.premiere_timestamp.try { |t| I18n.translate(locale, "videoinfo_started_streaming_x_ago", recode_date((Time.utc - t).ago, locale)) } %>
-        </h3>
-    <% end %>
-</div>
+            params_iv_embed = env.params.query.dup
+            params_iv_embed.delete_all("v")
+            link_iv_embed = URI.new(path: "/embed/#{id}")
+            link_iv_embed = IV::HttpServer::Utils.add_params_to_url(link_iv_embed, params_iv_embed)
 
-<div class="pure-g">
-    <div class="pure-u-1 pure-u-lg-1-5">
-        <div class="h-box">
+            link_iv_other = IV::Frontend::Misc.redirect_url(env)
+        -%>
+
+        <div class="player-links">
             <span id="watch-on-youtube">
-                <%-
-                    link_yt_watch = URI.new(scheme: "https", host: "www.youtube.com", path: "/watch", query: "v=#{video.id}")
-                    link_yt_embed = URI.new(scheme: "https", host: "www.youtube.com", path: "/embed/#{video.id}")
-
-                    if !plid.nil? && !continuation.nil?
-                        link_yt_param = URI::Params{"list" => [plid], "index" => [continuation.to_s]}
-                        link_yt_watch = IV::HttpServer::Utils.add_params_to_url(link_yt_watch, link_yt_param)
-                        link_yt_embed = IV::HttpServer::Utils.add_params_to_url(link_yt_embed, link_yt_param)
-                    end
-                -%>
                 <a id="link-yt-watch" rel="noreferrer noopener" data-base-url="<%= link_yt_watch %>" href="<%= link_yt_watch %>"><%= I18n.translate(locale, "videoinfo_watch_on_youTube") %></a>
                 (<a id="link-yt-embed" referrerpolicy="origin-when-cross-origin" rel="noopener" data-base-url="<%= link_yt_embed %>" href="<%= link_yt_embed %>"><%= I18n.translate(locale, "videoinfo_youTube_embed_link") %></a>)
             </span>
-
-            <p id="watch-on-another-invidious-instance">
-                <%- link_iv_other = IV::Frontend::Misc.redirect_url(env) -%>
+            <span id="watch-on-another-invidious-instance">
                 <a id="link-iv-other" data-base-url="<%= link_iv_other %>" href="<%= link_iv_other %>"><%= I18n.translate(locale, "Switch Invidious Instance") %></a>
-            </p>
-
-            <p id="embed-link">
-                <%-
-                    params_iv_embed = env.params.query.dup
-                    params_iv_embed.delete_all("v")
-
-                    link_iv_embed = URI.new(path: "/embed/#{id}")
-                    link_iv_embed = IV::HttpServer::Utils.add_params_to_url(link_iv_embed, params_iv_embed)
-                -%>
+            </span>
+            <span id="embed-link">
                 <a id="link-iv-embed" data-base-url="<%= link_iv_embed %>" href="<%= link_iv_embed %>"><%= I18n.translate(locale, "videoinfo_invidious_embed_link") %></a>
-            </p>
-
-            <p id="annotations">
+            </span>
+            <span id="annotations">
                 <% if params.annotations %>
-                    <a href="/watch?<%= env.params.query %>&iv_load_policy=3">
-                        <%= I18n.translate(locale, "Hide annotations") %>
-                    </a>
+                    <a href="/watch?<%= env.params.query %>&iv_load_policy=3"><%= I18n.translate(locale, "Hide annotations") %></a>
                 <% else %>
-                    <a href="/watch?<%= env.params.query %>&iv_load_policy=1">
-                        <%=I18n.translate(locale, "Show annotations")%>
-                    </a>
+                    <a href="/watch?<%= env.params.query %>&iv_load_policy=1"><%= I18n.translate(locale, "Show annotations") %></a>
+                <% end %>
+            </span>
+        </div>
+
+        <div>
+            <h1 class="vtitle"><%= title %></h1>
+
+            <p class="vstats">
+                <span id="views"><svg class="icon icon--sm"><use href="#i-eye"/></svg> <span class="num"><%= number_with_separator(video.views) %></span></span>
+                <span>·</span>
+                <span id="published-date">
+                    <% if video.premiere_timestamp.try &.> Time.utc %>
+                        <%= video.premiere_timestamp.try { |t| I18n.translate(locale, "Premieres `x`", t.to_s("%B %-d, %R UTC")) } %>
+                    <% else %>
+                        <%= I18n.translate(locale, "Shared `x`", video.published.to_s("%B %-d, %Y")) %>
+                    <% end %>
+                </span>
+                <% if !video.is_listed %>
+                    <span>·</span>
+                    <span><svg class="icon icon--sm"><use href="#i-unlock"/></svg> <%= I18n.translate(locale, "Unlisted") %></span>
                 <% end %>
             </p>
 
-            <% if user %>
-                <% playlists = Invidious::Database::Playlists.select_user_created_playlists(user.email) %>
-                <% if !playlists.empty? %>
-                    <form data-onsubmit="return_false" class="pure-form pure-form-stacked" action="/playlist_ajax?action=add_video" method="post" target="_blank">
-                        <div class="pure-control-group">
-                            <label for="playlist_id"><%= I18n.translate(locale, "Add to playlist: ") %></label>
-                            <select style="width:100%" name="playlist_id" id="playlist_id">
-                                <% playlists.each do |plid, playlist_title| %>
-                                    <option data-plid="<%= plid %>" value="<%= plid %>" <%= "selected" if user.preferences.default_playlist == plid %>><%= HTML.escape(playlist_title) %></option>
-                                <% end %>
-                            </select>
-                        </div>
-
-                        <input type="hidden" name="csrf_token" value="<%= URI.encode_www_form(env.get?("csrf_token").try &.as(String) || "") %>">
-                        <input type="hidden" name="video_id" value="<%= video.id %>">
-                        <button data-onclick="add_playlist_video" data-id="<%= video.id %>" type="submit" class="pure-button pure-button-primary">
-                            <b><%= I18n.translate(locale, "Add to playlist") %></b>
-                        </button>
-                    </form>
-                    <script id="playlist_data" type="application/json">
-                    <%=
-                    {
-                        "csrf_token" => URI.encode_www_form(env.get?("csrf_token").try &.as(String) || "")
-                    }.to_pretty_json
-                    %>
-                    </script>
-                    <script src="/js/playlist_widget.js?v=<%= Time.utc.to_unix_ms %>"></script>
-                <% end %>
+            <% if video.reason %>
+                <div class="notice" style="margin-top:var(--s-3)">
+                    <svg class="icon notice__icon"><use href="#i-alert"/></svg>
+                    <div class="notice__body"><%= video.reason %></div>
+                </div>
+            <% elsif video.premiere_timestamp.try &.> Time.utc %>
+                <p class="card__meta"><%= video.premiere_timestamp.try { |t| I18n.translate(locale, "Premieres in `x`", recode_date((t - Time.utc).ago, locale)) } %></p>
+            <% elsif video.live_now %>
+                <p class="card__meta"><%= video.premiere_timestamp.try { |t| I18n.translate(locale, "videoinfo_started_streaming_x_ago", recode_date((Time.utc - t).ago, locale)) } %></p>
             <% end %>
+        </div>
 
-            <%= Invidious::Frontend::WatchPage.download_widget(locale, video, video_assets) %>
+        <div class="byline">
+            <a class="byline__who" href="/channel/<%= video.ucid %>">
+                <% if !video.author_thumbnail.empty? %>
+                    <img class="avatar avatar--40" src="/ggpht<%= URI.parse(video.author_thumbnail).request_target %>" alt="" />
+                <% end %>
+                <span>
+                    <span class="byline__name" id="channel-name"><%= author %><% if !video.author_verified.nil? && video.author_verified %> <svg class="verified"><use href="#i-check"/></svg><% end %></span>
+                    </span>
+            </a>
 
-            <p id="views"><i class="icon ion-ios-eye"></i> <%= number_with_separator(video.views) %></p>
-            <p id="likes"><i class="icon ion-ios-thumbs-up"></i> <%= number_with_separator(video.likes) %></p>
-            <p id="dislikes" style="display: none; visibility: hidden;"></p>
+            <% sub_count_text = video.sub_count_text %>
+            <%= rendered "components/subscribe_widget" %>
+
+            <div class="ratebar">
+                <span id="likes"><svg class="icon icon--sm"><use href="#i-thumbup"/></svg> <span class="num"><%= number_with_separator(video.likes) %></span></span>
+            </div>
+
+            <% if params.listen %>
+                <a class="btn" title="<%= I18n.translate(locale, "Video mode") %>" id="link-iv-listen" data-base-url="/watch?<%= env.params.query %>&listen=0" href="/watch?<%= env.params.query %>&listen=0">
+                    <svg class="icon icon--sm"><use href="#i-video"/></svg>
+                    <%= I18n.translate(locale, "Video mode") %>
+                </a>
+            <% else %>
+                <a class="btn" title="<%= I18n.translate(locale, "Audio mode") %>" id="link-iv-listen" data-base-url="/watch?<%= env.params.query %>&listen=1" href="/watch?<%= env.params.query %>&listen=1">
+                    <svg class="icon icon--sm"><use href="#i-headset"/></svg>
+                    <%= I18n.translate(locale, "Audio mode") %>
+                </a>
+            <% end %>
+        </div>
+
+        <div id="description-box" class="desc">
+            <% if video.description.size < 200 || params.extend_desc %>
+                <div id="descriptionWrapper"><%= video.description_html %></div>
+            <% else %>
+                <input id="descexpansionbutton" type="checkbox"/>
+                <div id="descriptionWrapper" class="desc-text"><%= video.description_html %></div>
+                <label for="descexpansionbutton"><a></a></label>
+            <% end %>
+        </div>
+
+        <% if !video.music.empty? %>
+            <details class="panel panel--tight">
+                <summary class="panel__title"><%= I18n.translate(locale, "Music in this video") %></summary>
+                <div id="music-description-box" class="stack stack--tight">
+                    <% video.music.each do |music| %>
+                        <div class="music-item">
+                            <p class="music-song"><%= I18n.translate(locale, "Song: ") %><%= music.song %></p>
+                            <p class="music-artist"><%= I18n.translate(locale, "Artist: ") %><%= music.artist %></p>
+                            <p class="music-album"><%= I18n.translate(locale, "Album: ") %><%= music.album %></p>
+                        </div>
+                    <% end %>
+                </div>
+            </details>
+        <% end %>
+
+        <div class="panel panel--tight">
             <p id="genre"><%= I18n.translate(locale, "Genre: ") %>
                 <% if !video.genre_url %>
                     <%= video.genre %>
@@ -222,9 +233,6 @@ we're going to need to do it here in order to allow for translations.
                 <% end %>
             <% end %>
             <p id="family_friendly"><%= I18n.translate(locale, "Family friendly? ") %><%= I18n.translate_bool(locale, video.is_family_friendly) %></p>
-            <p id="wilson" style="display: none; visibility: hidden;"></p>
-            <p id="rating" style="display: none; visibility: hidden;"></p>
-            <p id="engagement" style="display: none; visibility: hidden;"></p>
             <% if video.allowed_regions.size != REGIONS.size %>
                 <p id="allowed_regions">
                     <% if video.allowed_regions.size < REGIONS.size // 2 %>
@@ -234,183 +242,139 @@ we're going to need to do it here in order to allow for translations.
                     <% end %>
                 </p>
             <% end %>
+            <p id="dislikes" style="display:none;visibility:hidden"></p>
+            <p id="wilson" style="display:none;visibility:hidden"></p>
+            <p id="rating" style="display:none;visibility:hidden"></p>
+            <p id="engagement" style="display:none;visibility:hidden"></p>
         </div>
-    </div>
 
-    <div class="pure-u-1 <% if params.related_videos || plid %>pure-u-lg-3-5<% else %>pure-u-md-4-5<% end %>">
-
-        <div class="pure-g h-box flexible title">
-            <div class="pure-u-1-2 flex-left flexible">
-                <a href="/channel/<%= video.ucid %>">
-                    <div class="channel-profile">
-                        <% if !video.author_thumbnail.empty? %>
-                            <img src="/ggpht<%= URI.parse(video.author_thumbnail).request_target %>" alt="" />
-                        <% end %>
-                        <span id="channel-name" class="channel-name"><%= author %><% if !video.author_verified.nil? && video.author_verified %>&nbsp;<i class="icon ion ion-md-checkmark-circle"></i><% end %></span>
+        <% if user %>
+            <% playlists = Invidious::Database::Playlists.select_user_created_playlists(user.email) %>
+            <% if !playlists.empty? %>
+                <form data-onsubmit="return_false" class="panel panel--tight" action="/playlist_ajax?action=add_video" method="post" target="_blank">
+                    <div class="field field--stack">
+                        <label for="playlist_id"><%= I18n.translate(locale, "Add to playlist: ") %></label>
+                        <select name="playlist_id" id="playlist_id">
+                            <% playlists.each do |plid, playlist_title| %>
+                                <option data-plid="<%= plid %>" value="<%= plid %>" <%= "selected" if user.preferences.default_playlist == plid %>><%= HTML.escape(playlist_title) %></option>
+                            <% end %>
+                        </select>
                     </div>
-                </a>
-            </div>
 
-            <div class="pure-u-1-2 flex-right flexible button-container">
-                <div class="pure-u">
-                    <% sub_count_text = video.sub_count_text %>
-                    <%= rendered "components/subscribe_widget" %>
+                    <input type="hidden" name="csrf_token" value="<%= URI.encode_www_form(env.get?("csrf_token").try &.as(String) || "") %>">
+                    <input type="hidden" name="video_id" value="<%= video.id %>">
+                    <button data-onclick="add_playlist_video" data-id="<%= video.id %>" type="submit" class="btn btn--accent">
+                        <svg class="icon icon--sm"><use href="#i-add"/></svg>
+                        <%= I18n.translate(locale, "Add to playlist") %>
+                    </button>
+                </form>
+                <script id="playlist_data" type="application/json">
+                <%=
+                {
+                    "csrf_token" => URI.encode_www_form(env.get?("csrf_token").try &.as(String) || "")
+                }.to_pretty_json
+                %>
+                </script>
+                <script src="/js/playlist_widget.js?v=<%= Time.utc.to_unix_ms %>"></script>
+            <% end %>
+        <% end %>
+
+        <%= Invidious::Frontend::WatchPage.download_widget(locale, video, video_assets) %>
+
+        <div id="comments" class="comments threads">
+            <% if (params.comments <=> ["", ""]) == 0 %>
+                <div id="comments-disabled-message" class="panel">
+                    <p><b><%= HTML.escape(I18n.translate(locale, "comments_invidious_disabled_text")) %></b></p>
                 </div>
-            </div>
-        </div>
-
-        <div class="h-box">
-            <p id="published-date">
-                <% if video.premiere_timestamp.try &.> Time.utc %>
-                    <b><%= video.premiere_timestamp.try { |t| I18n.translate(locale, "Premieres `x`", t.to_s("%B %-d, %R UTC")) } %></b>
+            <% else %>
+                <% if video.comments? %>
+                    <% if nojs %>
+                        <%= comment_html %>
+                    <% else %>
+                        <noscript>
+                            <a href="/watch?<%= env.params.query %>&nojs=1">
+                                <%= I18n.translate(locale, "Hi! Looks like you have JavaScript turned off. Click here to view comments, keep in mind they may take a bit longer to load.") %>
+                            </a>
+                        </noscript>
+                    <% end %>
                 <% else %>
-                    <b><%= I18n.translate(locale, "Shared `x`", video.published.to_s("%B %-d, %Y")) %></b>
-                <% end %>
-            </p>
-
-            <div id="description-box"> <!-- Description -->
-                <% if video.description.size < 200 || params.extend_desc %>
-                    <div id="descriptionWrapper"><%= video.description_html %></div>
-                <% else %>
-                    <input id="descexpansionbutton" type="checkbox"/>
-                    <div id="descriptionWrapper"><%= video.description_html %></div>
-                    <label for="descexpansionbutton">
-                        <a></a>
-                    </label>
-                <% end %>
-            </div>
-
-            <hr>
-
-            <% if !video.music.empty? %>
-                <input id="music-desc-expansion" type="checkbox"/>
-                <label for="music-desc-expansion">
-                    <h3 id="music-description-title">
-                        <%= I18n.translate(locale, "Music in this video") %>
-                        <span class="icon ion-ios-arrow-up"></span>
-                        <span class="icon ion-ios-arrow-down"></span>
-                    </h3>
-                </label>
-
-                <div id="music-description-box">
-                    <% video.music.each do |music| %>
-                        <div class="music-item">
-                            <p class="music-song"><%= I18n.translate(locale, "Song: ") %><%= music.song %></p>
-                            <p class="music-artist"><%= I18n.translate(locale, "Artist: ") %><%= music.artist %></p>
-                            <p class="music-album"><%= I18n.translate(locale, "Album: ") %><%= music.album %></p>
+                    <% if !nojs %>
+                        <div id="comments-turned-off-on-video-message" class="panel">
+                            <p><b><%= HTML.escape(I18n.translate(locale, "comments_youtube_disabled_text")) %></b></p>
+                            <p><button data-comments="reddit" id="try-reddit-comments-link" class="simulated_a">
+                                <%= HTML.escape(I18n.translate(locale, "comments_youtube_disabled_try_reddit")) %>
+                            </button></p>
                         </div>
                     <% end %>
-                </div>
-            <hr>
 
-            <% end %>
-            <div id="comments" class="comments">
-                <% if (params.comments <=> ["", ""]) == 0 %>
-                    <div id="comments-disabled-message" class="h-box v-box">
-                        <p><b><%= HTML.escape(I18n.translate(locale, "comments_invidious_disabled_text")) %></b></p>
-                    </div>
-                <% else %>
-                    <% if video.comments? %>
+                    <noscript>
                         <% if nojs %>
                             <%= comment_html %>
                         <% else %>
-                            <noscript>
-                                <a href="/watch?<%= env.params.query %>&nojs=1">
-                                    <%= I18n.translate(locale, "Hi! Looks like you have JavaScript turned off. Click here to view comments, keep in mind they may take a bit longer to load.") %>
-                                </a>
-                            </noscript>
+                            <a href="/watch?<%= env.params.query %>&nojs=1">
+                                <%= HTML.escape(I18n.translate(locale, "comments_youtube_disabled_try_reddit_no_js")) %>
+                            </a>
                         <% end %>
-                    <% else %>
-                        <% if !nojs %>
-                            <div id="comments-turned-off-on-video-message" class="h-box v-box">
-                                <p><b><%= HTML.escape(I18n.translate(locale, "comments_youtube_disabled_text")) %></b></p>
-                                <p><b><button data-comments="reddit" id="try-reddit-comments-link" class="simulated_a">
-                                    <%= HTML.escape(I18n.translate(locale, "comments_youtube_disabled_try_reddit")) %>
-                                </button></b></p>
-                            </div>
-                        <% end %>
-
-                        <noscript>
-                            <% if nojs %>
-                                <%= comment_html %>
-                            <% else %>
-                                <a href="/watch?<%= env.params.query %>&nojs=1">
-                                    <%= HTML.escape(I18n.translate(locale, "comments_youtube_disabled_try_reddit_no_js")) %>
-                                </a>
-                            <% end %>
-                        </noscript>
-                    <% end %>
+                    </noscript>
                 <% end %>
-            </div>
+            <% end %>
         </div>
     </div>
 
     <% if params.related_videos || plid %>
-        <div class="pure-u-1 pure-u-lg-1-5">
+        <aside class="stack">
             <% if plid %>
-                <div id="playlist" class="h-box"></div>
+                <div id="playlist"></div>
             <% end %>
 
             <% if params.related_videos %>
-                <div class="h-box">
-                    <% if !video.related_videos.empty? %>
-                        <div <% if plid %>style="display:none"<% end %>>
-                            <div class="pure-control-group">
-                                <label for="continue"><%= I18n.translate(locale, "preferences_continue_label") %></label>
-                                <input name="continue" id="continue" type="checkbox" <% if params.continue %>checked<% end %>>
-                            </div>
-                            <hr>
-                        </div>
-                    <% end %>
+                <% if !video.related_videos.empty? %>
+                    <div class="field field--check" <% if plid %>style="display:none"<% end %>>
+                        <label for="continue"><%= I18n.translate(locale, "preferences_continue_label") %></label>
+                        <input name="continue" id="continue" type="checkbox" <% if params.continue %>checked<% end %>>
+                    </div>
+                <% end %>
 
+                <div class="stack">
                     <% video.related_videos.each do |rv| %>
                         <% if rv["id"]? %>
-                            <div class="pure-u-1">
-
-                            <div class="thumbnail">
+                            <div class="row">
                                 <%- if !env.get("preferences").as(Preferences).thin_mode -%>
-                                    <a tabindex="-1" href="/watch?v=<%= rv["id"] %>&listen=<%= params.listen %>">
-                                        <img loading="lazy" class="thumbnail" src="/vi/<%= rv["id"] %>/mqdefault.jpg" alt="" />
+                                    <a tabindex="-1" class="thumb" href="/watch?v=<%= rv["id"] %>&listen=<%= params.listen %>">
+                                        <img loading="lazy" src="/vi/<%= rv["id"] %>/mqdefault.jpg" alt="" />
+                                        <%- if (length_seconds = rv["length_seconds"]?.try &.to_i?) && length_seconds != 0 -%>
+                                            <span class="stamp length"><%= recode_length_seconds(length_seconds) %></span>
+                                        <%- end -%>
                                     </a>
                                 <%- else -%>
                                     <div class="thumbnail-placeholder"></div>
                                 <%- end -%>
 
-                                <div class="bottom-right-overlay">
-                                    <%- if (length_seconds = rv["length_seconds"]?.try &.to_i?) && length_seconds != 0 -%>
-                                        <p class="length"><%= recode_length_seconds(length_seconds) %></p>
-                                    <%- end -%>
-                                </div>
-                            </div>
-
-                            <div class="video-card-row">
-                                <a href="/watch?v=<%= rv["id"] %>&listen=<%= params.listen %>"><p dir="auto"><%= HTML.escape(rv["title"]) %></p></a>
-                            </div>
-
-                            <h5 class="pure-g">
-                                <div class="pure-u-14-24">
-                                    <% if !rv["ucid"].empty? %>
-                                        <b style="width:100%"><a href="/channel/<%= rv["ucid"] %>"><%= rv["author"]? %><% if rv["author_verified"]? == "true" %>&nbsp;<i class="icon ion ion-md-checkmark-circle"></i><% end %></a></b>
-                                    <% else %>
-                                        <b style="width:100%"><%= rv["author"]? %><% if rv["author_verified"]? == "true" %>&nbsp;<i class="icon ion ion-md-checkmark-circle"></i><% end %></b>
-                                    <% end %>
-                                </div>
-
-                                <div class="pure-u-10-24" style="text-align:right">
-                                    <b class="width:100%"><%=
+                                <div class="card__text">
+                                    <a href="/watch?v=<%= rv["id"] %>&listen=<%= params.listen %>">
+                                        <h4 class="card__title" dir="auto"><%= HTML.escape(rv["title"]) %></h4>
+                                    </a>
+                                    <p class="card__by">
+                                        <% if !rv["ucid"].empty? %>
+                                            <a href="/channel/<%= rv["ucid"] %>"><%= rv["author"]? %></a>
+                                        <% else %>
+                                            <span><%= rv["author"]? %></span>
+                                        <% end %>
+                                        <% if rv["author_verified"]? == "true" %><svg class="verified"><use href="#i-check"/></svg><% end %>
+                                    </p>
+                                    <p class="card__meta"><%=
                                         views = short_text_to_number(rv["short_view_count"]? || "0")
                                         I18n.translate_count(locale, "generic_views_count", views, I18n::NumberFormatting::Short)
-                                    %></b>
+                                    %></p>
                                 </div>
-                            </h5>
-
                             </div>
                         <% end %>
                     <% end %>
                 </div>
             <% end %>
-        </div>
+        </aside>
     <% end %>
 </div>
+
 <script src="/js/comments.js?v=<%= ASSET_COMMIT %>"></script>
 <script src="/js/watch.js?v=<%= ASSET_COMMIT %>"></script>

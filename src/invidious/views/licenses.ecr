@@ -4,9 +4,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/tokens.css?v=<%= ASSET_COMMIT %>">
+    <link rel="stylesheet" href="/css/base.css?v=<%= ASSET_COMMIT %>">
+    <link rel="stylesheet" href="/css/layout.css?v=<%= ASSET_COMMIT %>">
+    <link rel="stylesheet" href="/css/components.css?v=<%= ASSET_COMMIT %>">
+    <title><%= I18n.translate(locale, "JavaScript license information") %> - Invidious</title>
 </head>
 
 <body>
+  <div class="shell page prose">
     <h1><%= I18n.translate(locale, "JavaScript license information") %></h1>
     <table id="jslicense-labels1">
         <tr>
@@ -181,5 +187,6 @@
             <%-= {{row.id}} -%>
         <% {% end %} -%>
     </table>
+  </div>
 </body>
 </html>

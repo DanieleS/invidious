@@ -14,33 +14,19 @@ module Invidious::Frontend::Comments
             replies_html = self.template_reddit(replies.data.as(RedditListing).children, locale)
           end
 
-          if child.depth > 0
-            html << <<-END_HTML
-            <div class="pure-g">
-            <div class="pure-u-1-24">
-            </div>
-            <div class="pure-u-23-24">
-            END_HTML
-          else
-            html << <<-END_HTML
-            <div class="pure-g">
-            <div class="pure-u-1">
-            END_HTML
-          end
-
           html << <<-END_HTML
-          <p>
-            <a href="javascript:void(0)" data-onclick="toggle_parent">[ − ]</a>
-            <b><a href="https://www.reddit.com/user/#{child.author}">#{child.author}</a></b>
-            #{I18n.translate_count(locale, "comments_points_count", child.score, I18n::NumberFormatting::Separator)}
-            <span title="#{child.created_utc.to_s("%a %B %-d %T %Y UTC")}">#{I18n.translate(locale, "`x` ago", recode_date(child.created_utc, locale))}</span>
-            <a href="https://www.reddit.com#{child.permalink}" title="#{I18n.translate(locale, "permalink")}">#{I18n.translate(locale, "permalink")}</a>
+          <div class="thread-reddit#{child.depth > 0 ? " thread-reddit--nested" : ""}">
+            <p class="thread__who">
+              <button class="simulated_a" type="button" data-onclick="toggle_parent">[ − ]</button>
+              <b><a href="https://www.reddit.com/user/#{child.author}">#{child.author}</a></b>
+              <span>#{I18n.translate_count(locale, "comments_points_count", child.score, I18n::NumberFormatting::Separator)}</span>
+              <span title="#{child.created_utc.to_s("%a %B %-d %T %Y UTC")}">#{I18n.translate(locale, "`x` ago", recode_date(child.created_utc, locale))}</span>
+              <a href="https://www.reddit.com#{child.permalink}" title="#{I18n.translate(locale, "permalink")}">#{I18n.translate(locale, "permalink")}</a>
             </p>
-            <div>
+            <div class="thread__text">
             #{body_html}
+            </div>
             #{replies_html}
-          </div>
-          </div>
           </div>
           END_HTML
         end

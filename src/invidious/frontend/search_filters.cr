@@ -24,7 +24,7 @@ module Invidious::Frontend::SearchFilters
       str << "\t\t\t</div>\n"
 
       str << "\t\t\t<div id='filters-apply'>"
-      str << "<button type='submit' class=\"pure-button pure-button-primary\">"
+      str << "<button type='submit' class=\"btn btn--accent\">"
       str << I18n.translate(locale, "search_filters_apply_button")
       str << "</button></div>\n"
 
@@ -40,7 +40,7 @@ module Invidious::Frontend::SearchFilters
   macro filter_wrapper(name)
     str << "\t\t\t\t<div class=\"filter-column\"><fieldset>\n"
 
-    str << "\t\t\t\t\t<legend><div class=\"filter-name underlined\">"
+    str << "\t\t\t\t\t<legend><div class=\"filter-name\">"
     str << I18n.translate(locale, "search_filters_{{name}}_label")
     str << "</div></legend>\n"
 

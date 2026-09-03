@@ -80,10 +80,10 @@ function update_ticker_count() {
     const notification_count = helpers.storage.get(STORAGE_KEY_NOTIF_COUNT) || 0;
     if (notification_count > 0) {
         notification_ticker.innerHTML =
-            '<span id="notification_count">' + notification_count + '</span> <i class="icon ion-ios-notifications"></i>';
+            '<svg class="icon"><use href="#i-bell"/></svg><span class="iconbtn__badge" id="notification_count">' + notification_count + '</span>';
     } else {
         notification_ticker.innerHTML =
-            '<i class="icon ion-ios-notifications-outline"></i>';
+            '<svg class="icon"><use href="#i-bell-off"/></svg>';
     }
 }
 

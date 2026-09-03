@@ -5,8 +5,7 @@
 </title>
 <% end %>
 
-<%= rendered "components/feed_menu" %>
-
-<p>
-    <%= message %>
-</p>
+<div class="notice">
+    <svg class="icon notice__icon"><use href="#i-alert"/></svg>
+    <div class="notice__body"><%= message %></div>
+</div>

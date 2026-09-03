@@ -5,20 +5,18 @@
 
 <% content_for "header" do %>
 <title><%= search_privacy ? "Search" : search_query %> - Invidious</title>
-<link rel="stylesheet" href="/css/search.css?v=<%= ASSET_COMMIT %>">
 <% end %>
 
-<!-- Search redirection and filtering UI -->
+<% # Redirezione della ricerca e filtri %>
 <%= Invidious::Frontend::SearchFilters.generate(query.filters, query.text, query.page, locale) %>
-<hr/>
-
 
 <%- if items.empty? -%>
-<div class="h-box no-results-error">
-    <div>
-        <%= I18n.translate(locale, "search_message_no_results") %><br/><br/>
-        <%= I18n.translate(locale, "search_message_change_filters_or_query") %><br/><br/>
-        <%= I18n.translate(locale, "search_message_use_another_instance", redirect_url) %>
+<div class="notice">
+    <svg class="icon notice__icon"><use href="#i-alert"/></svg>
+    <div class="notice__body">
+        <p><%= I18n.translate(locale, "search_message_no_results") %></p>
+        <p><%= I18n.translate(locale, "search_message_change_filters_or_query") %></p>
+        <p><%= I18n.translate(locale, "search_message_use_another_instance", redirect_url) %></p>
     </div>
 </div>
 <%- else -%>

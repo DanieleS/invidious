@@ -2,17 +2,14 @@
 <title>Invidious</title>
 <% end %>
 
-<div>
-    <div id="post" class="comments post-comments">
+<div class="stack">
+    <div id="post" class="comments threads">
         <%= IV::Frontend::Comments.template_youtube(post_response.not_nil!, locale, thin_mode) %>
     </div>
 
-    <% if nojs %>
-        <hr>
-    <% end %>
-    <br />
+    <hr>
 
-    <div id="comments" class="comments post-comments">
+    <div id="comments" class="comments threads">
         <% if nojs %>
             <%= comment_html %>
         <% else %>

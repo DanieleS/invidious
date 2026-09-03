@@ -1,0 +1,165 @@
+/*
+ * tokens.css — l'unico posto dove vivono i colori.
+ *
+ * Il tema scuro è il default: sta nel blocco :root nudo, così una pagina
+ * senza data-theme e senza JavaScript è comunque scura e leggibile.
+ * Il tema chiaro arriva da due strade che devono coesistere:
+ *
+ *   1. :root[data-theme="light"]  — scelta esplicita, stampata sull'<html>
+ *      dal server (preferenza dell'utente) o dallo script anti-lampeggio.
+ *   2. @media (prefers-color-scheme: light) — ripiego per chi ha JavaScript
+ *      disabilitato e nessuna preferenza salvata. Va escluso quando c'è già
+ *      una scelta esplicita di scuro, altrimenti un utente che vuole il buio
+ *      su un sistema chiaro si ritrova il tema sbagliato.
+ *
+ * Nessun componente deve dichiarare un colore letterale: se un valore non
+ * esiste qui dentro, non esiste.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* --- superfici, dal fondo verso l'alto --- */
+  --bg: #0a0d13;
+  --bg-blur: rgba(16, 20, 29, 0.8);
+  --surface: #151b26;
+  --surface-hi: #1e2534;
+  --line: #262f3d;
+  --line-soft: #1b2230;
+
+  /* --- testo --- */
+  --text: #e7eaf0;
+  --text-2: #a3adbe;
+  --text-3: #6e7889;
+
+  /* --- accento --- */
+  --accent: #dc2a3a;
+  --accent-hi: #e94553;
+  --accent-text: #ff6b75;
+  --accent-on: #ffffff;
+  --accent-soft: rgba(220, 42, 58, 0.14);
+  --glow: rgba(220, 42, 58, 0.1);
+
+  /* --- semantico. Il rosso è l'accento, quindi un errore non può essere
+         rosso senza confondersi con un pulsante: usa l'ambra. --- */
+  --warn: #f5a623;
+  --warn-soft: rgba(245, 166, 35, 0.13);
+  --good: #3dd68c;
+  --good-soft: rgba(61, 214, 140, 0.13);
+
+  /* --- sopra le thumbnail: sempre scuro, in entrambi i temi --- */
+  --chip-bg: rgba(4, 6, 10, 0.84);
+  --chip-text: #f2f5fa;
+  --on-media: #f7f9fc;
+  --on-media-2: #b9c2d1;
+  --scrim: linear-gradient(
+    75deg,
+    rgba(5, 7, 11, 0.95) 0%,
+    rgba(5, 7, 11, 0.85) 34%,
+    rgba(5, 7, 11, 0.25) 68%,
+    transparent 100%
+  );
+  --media-empty: #1e2534;
+
+  /* --- tipografia --- */
+  --font-display: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-ui: "Figtree", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --t-xs: 0.75rem;
+  --t-sm: 0.8125rem;
+  --t-base: 0.9375rem;
+  --t-md: 1.0625rem;
+  --t-lg: 1.375rem;
+  --t-xl: 1.75rem;
+  --t-2xl: 2.25rem;
+
+  /* --- spazio, scala di 4 --- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  /* --- raggi, per ruolo: un chip non è un pannello --- */
+  --r-chip: 5px;
+  --r-ctrl: 9px;
+  --r-media: 13px;
+  --r-panel: 16px;
+
+  --shell: 1400px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Scelta esplicita di chiaro: vince anche su un sistema operativo scuro. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #eef1f6;
+  --bg-blur: rgba(255, 255, 255, 0.85);
+  --surface: #ffffff;
+  --surface-hi: #e4e9f2;
+  --line: #d3dae7;
+  --line-soft: #e4e9f2;
+
+  --text: #0f1420;
+  --text-2: #4b5568;
+  --text-3: #79839a;
+
+  --accent: #c8202f;
+  --accent-hi: #b01a28;
+  --accent-text: #a31421;
+  --accent-on: #ffffff;
+  --accent-soft: rgba(200, 32, 47, 0.1);
+  --glow: rgba(200, 32, 47, 0.12);
+
+  --warn: #a86400;
+  --warn-soft: rgba(168, 100, 0, 0.12);
+  --good: #12855a;
+  --good-soft: rgba(18, 133, 90, 0.12);
+
+  --chip-bg: rgba(9, 12, 18, 0.78);
+  --media-empty: #dce2ec;
+}
+
+/*
+ * Nessuna scelta esplicita e niente JavaScript: segui il sistema operativo.
+ * I valori sono identici al blocco sopra — sono due strade allo stesso tema,
+ * non due temi.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --bg: #eef1f6;
+    --bg-blur: rgba(255, 255, 255, 0.85);
+    --surface: #ffffff;
+    --surface-hi: #e4e9f2;
+    --line: #d3dae7;
+    --line-soft: #e4e9f2;
+
+    --text: #0f1420;
+    --text-2: #4b5568;
+    --text-3: #79839a;
+
+    --accent: #c8202f;
+    --accent-hi: #b01a28;
+    --accent-text: #a31421;
+    --accent-on: #ffffff;
+    --accent-soft: rgba(200, 32, 47, 0.1);
+    --glow: rgba(200, 32, 47, 0.12);
+
+    --warn: #a86400;
+    --warn-soft: rgba(168, 100, 0, 0.12);
+    --good: #12855a;
+    --good-soft: rgba(18, 133, 90, 0.12);
+
+    --chip-bg: rgba(9, 12, 18, 0.78);
+    --media-empty: #dce2ec;
+  }
+}
