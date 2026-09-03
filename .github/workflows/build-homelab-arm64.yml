@@ -1,0 +1,85 @@
+name: Build homelab arm64 container
+
+# Questo fork gira su un solo bersaglio: un Raspberry Pi 4 arm64 in uno swarm
+# di casa. Quindi si builda solo linux/arm64/v8, su un runner ARM nativo
+# (`ubuntu-24.04-arm`, gratuito sui repository pubblici) invece che sotto QEMU,
+# e si pubblica su GHCR sotto questo fork.
+#
+# I due workflow ereditati da upstream, `build-nightly-container.yml` e
+# `build-stable-container.yml`, pubblicano su `quay.io/invidious`: senza i
+# secret di upstream fallirebbero a ogni push, e comunque scriverebbero nel
+# namespace di un altro. Sono disabilitati (Actions > workflow > Disable),
+# non cancellati, per non creare conflitti quando si fa il merge da upstream.
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "*.md"
+      - LICENSE
+      - TRANSLATION
+      - invidious.service
+      - .git*
+      - .editorconfig
+      - screenshots/*
+      - .github/ISSUE_TEMPLATE/*
+      - kubernetes/**
+      - .envrc
+      - "nix/**"
+  # Per ricostruire la stessa immagine senza un commit, es. dopo aver cambiato
+  # questo workflow o per rifare un build fallito.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          # metadata-action normalizza il nome in minuscolo: GHCR non accetta
+          # `DanieleS` nel riferimento all'immagine.
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,format=short,prefix={{date 'YYYY.MM.DD'}}-
+            type=raw,value=master
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/arm64/v8
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # `release=1` accende `crystal build --release`: il binario e' molto
+          # piu' veloce e su un Pi la differenza si sente. In cambio il build
+          # dura di piu', ma lo paga il runner, non il Pi.
+          build-args: |
+            release=1
+          # La cache di Actions salva il lavoro piu' lungo (compilazione di
+          # OpenSSL da sorgente e la cache di crystal), quindi un commit che
+          # tocca solo i template non ricompila tutto da zero.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
