@@ -21,6 +21,13 @@ struct Invidious::User
       return HTTP::Cookie.new(
         name: "SID",
         domain: domain,
+        # Without an explicit path, RFC 6265 §5.1.4 has the browser derive the
+        # cookie's default path from the *directory* of the request that set
+        # it. Set from "/login" that happens to be "/", which is why this was
+        # never noticed; set from "/oidc/callback" it becomes "/oidc", and the
+        # session cookie is then sent only back to the login endpoints — the
+        # user appears logged out everywhere else, with no error anywhere.
+        path: "/",
         value: sid,
         expires: Time.utc + 2.years,
         secure: @@secure,
