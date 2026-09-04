@@ -10,10 +10,10 @@
     </a>
 </div>
 
-<div class="stack stack--tight">
+<div class="stack stack--tight narrow--wide">
     <% tokens.each do |token| %>
-        <div class="manage-row<% if token[:session] == sid %> deleted<% end %>">
-            <svg class="icon"><use href="#i-key"/></svg>
+        <div class="manage-row<% if token[:session] == sid %> manage-row--current<% end %>">
+            <svg class="icon manage-row__icon"><use href="#i-key"/></svg>
             <div class="manage-row__text">
                 <code class="manage-row__name"><%= token[:session] %></code>
                 <span class="manage-row__meta"><%= I18n.translate(locale, "`x` ago", recode_date(token[:issued], locale)) %></span>

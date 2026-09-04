@@ -20,14 +20,23 @@
 <% end %>
 </div>
 
-<div class="sect__head">
-    <h2 class="sect__title"><%= I18n.translate(locale, "user_saved_playlists", %(<span id="count">#{items_saved.size}</span>)) %></h2>
-</div>
+<%
+  # Un titolo con il nulla sotto sembra un errore di caricamento: la sezione
+  # delle playlist salvate compare solo quando ce n'è almeno una. Il contatore
+  # con id="count" serve comunque al JavaScript, quindi resta nel DOM.
+%>
+<% if items_saved.empty? %>
+    <span class="sr-only" id="count">0</span>
+<% else %>
+    <div class="sect__head">
+        <h2 class="sect__title"><%= I18n.translate(locale, "user_saved_playlists", %(<span id="count">#{items_saved.size}</span>)) %></h2>
+    </div>
 
-<div class="grid">
-<% items_saved.each do |item| %>
-    <%= rendered "components/item" %>
+    <div class="grid">
+    <% items_saved.each do |item| %>
+        <%= rendered "components/item" %>
+    <% end %>
+    </div>
 <% end %>
-</div>
 
 <script src="/js/watched_indicator.js?v=<%= ASSET_COMMIT %>"></script>

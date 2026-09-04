@@ -254,6 +254,15 @@
   margin-inline-end: auto;
 }
 
+/* Alcune intestazioni sono anche link (le iscrizioni portano al feed): resta
+   un titolo, quindi prende il colore del testo e non quello dei link. */
+.page-head__title a {
+  color: var(--text);
+}
+.page-head__title a:hover {
+  color: var(--accent-text);
+}
+
 .page-head__note {
   color: var(--text-3);
   font-size: var(--t-sm);

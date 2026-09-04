@@ -12,7 +12,7 @@
         <% if !channel.pronouns.nil? %>
             <span class="channel-pronouns"><%= channel.pronouns %></span>
         <% end %>
-        <span class="channel-head__sub"><%= number_to_short_text(channel.sub_count) %></span>
+        <span class="channel-head__sub"><%= I18n.translate_count(locale, "generic_subscribers_count", channel.sub_count, I18n::NumberFormatting::Short) %></span>
     </div>
 
     <% sub_count_text = number_to_short_text(channel.sub_count) %>
@@ -31,7 +31,7 @@
 </div>
 
 <div class="page-head">
-    <div class="pillbar">
+    <div class="pillbar pillbar--quiet">
         <% sort_options.each do |sort| %>
             <a class="pill" href="<%= relative_url %>?sort_by=<%= sort %>"<% if sort_by == sort %> aria-current="page"<% end %>>
                 <%= I18n.translate(locale, sort) %>

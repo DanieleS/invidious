@@ -16,9 +16,10 @@
     </a>
 </div>
 
-<div class="stack stack--tight">
+<div class="stack stack--tight narrow--wide">
     <% subscriptions.each do |channel| %>
         <div class="manage-row<% if channel.deleted %> deleted<% end %>">
+            <svg class="icon manage-row__icon"><use href="#i-user"/></svg>
             <div class="manage-row__text">
                 <a class="manage-row__name" href="/channel/<%= channel.id %>"><%= HTML.escape(channel.author) %></a>
             </div>

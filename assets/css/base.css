@@ -281,6 +281,27 @@ input[type="file"] {
   border: 1px dashed var(--line);
   border-radius: var(--r-ctrl);
   cursor: pointer;
+  color: var(--text-2);
+  font-size: var(--t-sm);
+}
+
+/* Senza questo il selettore di file resta il pulsante grigio del sistema
+   operativo, l'unico elemento non tematizzato della pagina. */
+input[type="file"]::file-selector-button {
+  margin-inline-end: var(--s-3);
+  padding: 6px var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-chip);
+  background: var(--surface-hi);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-on);
 }
 
 label {

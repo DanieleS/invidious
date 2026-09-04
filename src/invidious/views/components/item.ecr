@@ -57,13 +57,20 @@
           end
         -%>
 
-        <%- if !thin_mode -%>
+        <%- if thin_mode -%>
+            <div class="thumbnail-placeholder"></div>
+        <%- elsif item.video_count == 0 -%>
+            <%- # Senza video non c'è anteprima da mostrare: il rettangolo vuoto
+                # sembrava un'immagine rotta. -%>
+            <a tabindex="-1" class="thumb thumb--empty" href="<%= link_url %>">
+                <svg class="icon icon--lg"><use href="#i-list"/></svg>
+                <span class="stamp"><%= I18n.translate_count(locale, "generic_videos_count", item.video_count, I18n::NumberFormatting::Separator) %></span>
+            </a>
+        <%- else -%>
             <a tabindex="-1" class="thumb" href="<%= link_url %>">
                 <img loading="lazy" src="<%= URI.parse(item.thumbnail || "/").request_target %>" alt="" />
                 <span class="stamp"><%= I18n.translate_count(locale, "generic_videos_count", item.video_count, I18n::NumberFormatting::Separator) %></span>
             </a>
-        <%- else -%>
-            <div class="thumbnail-placeholder"></div>
         <%- end -%>
 
         <div class="card__text">
@@ -175,14 +182,22 @@
                     <%- if author_verified %><svg class="verified"><use href="#i-check"/></svg><% end -%>
                 </p>
 
-                <p class="card__meta" dir="auto">
-                    <% if item.responds_to?(:views) && item.views %><%= I18n.translate_count(locale, "generic_views_count", item.views || 0, I18n::NumberFormatting::Short) %><% end %>
-                    <% if item.responds_to?(:premiere_timestamp) && item.premiere_timestamp.try &.> Time.utc %>
-                        · <%= I18n.translate(locale, "Premieres in `x`", recode_date((item.premiere_timestamp.as(Time) - Time.utc).ago, locale)) %>
-                    <% elsif item.responds_to?(:published) && (Time.utc - item.published) > 1.minute %>
-                        · <%= I18n.translate(locale, "Shared `x` ago", recode_date(item.published, locale)) %>
-                    <% end %>
-                </p>
+                <%-
+                  # I due pezzi del meta vanno raccolti prima di scriverli: il
+                  # separatore va messo solo se c'è davvero qualcosa da separare.
+                  meta_parts = [] of String
+                  if item.responds_to?(:views) && item.views
+                    meta_parts << I18n.translate_count(locale, "generic_views_count", item.views || 0, I18n::NumberFormatting::Short)
+                  end
+                  if item.responds_to?(:premiere_timestamp) && item.premiere_timestamp.try &.> Time.utc
+                    meta_parts << I18n.translate(locale, "Premieres in `x`", recode_date((item.premiere_timestamp.as(Time) - Time.utc).ago, locale))
+                  elsif item.responds_to?(:published) && (Time.utc - item.published) > 1.minute
+                    meta_parts << I18n.translate(locale, "Shared `x` ago", recode_date(item.published, locale))
+                  end
+                -%>
+                <%- if !meta_parts.empty? -%>
+                    <p class="card__meta" dir="auto"><%= meta_parts.join(" · ") %></p>
+                <%- end -%>
             </div>
         </div>
     <% end %>

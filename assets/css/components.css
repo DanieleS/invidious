@@ -104,13 +104,16 @@
   text-decoration: none;
 }
 
+/* Il contatore sta sull'angolo dell'icona e sborda un po' fuori: dentro i
+   36px del pulsante finiva sopra la campanella e la copriva. */
 .iconbtn__badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 16px;
-  height: 16px;
-  padding-inline: 3px;
+  top: 1px;
+  right: 1px;
+  translate: 30% -30%;
+  min-width: 17px;
+  height: 17px;
+  padding-inline: 4px;
   display: grid;
   place-items: center;
   background: var(--accent);
@@ -164,6 +167,15 @@
   border-color: var(--accent);
   color: var(--accent-on);
   font-weight: 600;
+}
+
+/* Secondo asse di scelta (ordinamento, filtri) accanto a uno principale
+   (le schede del canale): stessa forma, molto meno peso, così si capisce
+   quale delle due file comanda la pagina. */
+.pillbar--quiet .pill[aria-current="page"] {
+  background: var(--surface-hi);
+  border-color: var(--line);
+  color: var(--accent-text);
 }
 
 /* ==========================================================================
@@ -231,6 +243,14 @@
 }
 .thumb:hover {
   text-decoration: none;
+}
+
+/* Playlist senza video: la cornice resta, dentro ci va un simbolo invece di
+   un'immagine che non esiste. */
+.thumb--empty {
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
 }
 
 /* Ritratto per i canali: stessa cornice, proporzione diversa. */
@@ -1011,6 +1031,26 @@
   color: var(--text-3);
 }
 
+/* .deleted vive in base.css, che si carica prima: senza questa regola il
+   fondo di .manage-row vinceva e la riga segnalata restava indistinguibile. */
+.manage-row.deleted {
+  background: var(--accent-soft);
+  border-inline-start: 3px solid var(--accent);
+}
+
+/* La sessione da cui stai navigando: va distinta, ma non è un problema —
+   il rosso di .deleted direbbe la cosa sbagliata. */
+.manage-row--current {
+  border-inline-start: 3px solid var(--good);
+}
+.manage-row--current .manage-row__icon {
+  color: var(--good);
+}
+
+.manage-row__icon {
+  color: var(--text-3);
+}
+
 /* ==========================================================================
  * Playlist
  * ========================================================================== */
@@ -1318,6 +1358,10 @@
 }
 .slides::-webkit-scrollbar {
   display: none;
+}
+
+.carousel {
+  max-width: 520px;
 }
 
 .slides-item {
