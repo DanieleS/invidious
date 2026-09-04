@@ -413,6 +413,7 @@
     "preferences_show_nick_label": "Mostra nickname in alto: ",
     "videoinfo_youTube_embed_link": "Incorpora",
     "videoinfo_invidious_embed_link": "Incorpora collegamento",
+    "videoinfo_share_link": "Condividi",
     "user_created_playlists": "playlist create da `x`",
     "preferences_save_player_pos_label": "Memorizza il minutaggio raggiunto dal video: ",
     "preferences_quality_option_dash": "DASH (qualità adattiva)",

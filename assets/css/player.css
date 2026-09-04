@@ -226,6 +226,15 @@
   display: none !important;
 }
 
+/* La condivisione se ne va dalla barra appena la pagina ha un posto per lei.
+   La classe la mette il JS, e solo se il collegamento in pagina esiste
+   davvero: con un binario vecchio il pulsante resta dov'era invece di
+   sparire e basta. Nell'incorporamento la pagina non c'è, e infatti lì la
+   classe non viene mai messa. */
+.video-js.iv-share-in-page .vjs-share-control {
+  display: none !important;
+}
+
 /* ==========================================================================
    3. La plancia: la barra esce dall'immagine
    ========================================================================== */
@@ -1046,12 +1055,43 @@
   }
 }
 
-@media (max-width: 420px) {
-  .video-js .vjs-time-divider,
-  .video-js .vjs-duration {
+/*
+ * Sugli schermi stretti i comandi non vanno a capo: quello che non ci sta se
+ * ne va nel pannello, dove peraltro era già.
+ *
+ * L'ordine in cui si arrendono è quello di quanto servono davvero mentre si
+ * guarda un video. Velocità e qualità per prime: si toccano una volta ogni
+ * tanto, e la loro riga nel pannello dice comunque a che punto stanno. Poi i
+ * sottotitoli. Alla fine restano trasporto, orario e le due chiavi per tutto
+ * il resto: impostazioni e schermo intero.
+ */
+/* I selettori sono lunghi quanto quelli che devono battere: le regole che
+   mostrano le pillole e l'orario partono da `.vjs-control-bar` e da
+   `:not(.vjs-live)`, e una regola più corta qui dentro non le tocca nemmeno,
+   media query o no. */
+@media (max-width: 640px) {
+  .video-js .vjs-control-bar .iv-pill-speed,
+  .video-js .vjs-control-bar .iv-pill-quality {
     display: none;
   }
 }
+
+@media (max-width: 420px) {
+  .video-js:not(.vjs-live) .vjs-time-divider,
+  .video-js:not(.vjs-live) .vjs-duration {
+    display: none;
+  }
+}
+
+/* I sottotitoli resistono più a lungo di tutto il resto: sono l'unica di
+   quelle tre che si accende e si spegne mentre si guarda. Se ne vanno solo
+   sui telefoni davvero stretti, dove non ci starebbero senza andare a capo. */
+@media (max-width: 340px) {
+  .video-js .vjs-control-bar .iv-pill-captions {
+    display: none;
+  }
+}
+
 
 /* Telefono in orizzontale: la pagina attorno non esiste più, quindi la
    plancia non ha senso — i comandi tornano sull'immagine.

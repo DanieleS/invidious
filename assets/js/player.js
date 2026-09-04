@@ -868,6 +868,35 @@ function iv_setup_mini_player() {
     });
 }
 
+/**
+ * Sposta la condivisione dal lettore alla pagina.
+ *
+ * Condividere non è un comando del video: non si fa mentre si guarda, e non ha
+ * niente a che vedere col fotogramma che si sta vedendo. Sta bene in fondo,
+ * accanto a «incorpora» e «cambia istanza», e sulla barra di un telefono
+ * libera un posto che serve a qualcosa che si usa davvero.
+ *
+ * Il pannello resta quello di videojs-share: il pulsante c'è ancora, nascosto,
+ * e il collegamento in pagina gli clicca sopra. Se il collegamento non c'è —
+ * per esempio con un binario compilato prima di questa modifica — il pulsante
+ * resta dov'era, così non si perde la funzione aspettando una ricompilazione.
+ */
+function iv_move_share_to_page() {
+    var link = document.querySelector('#share-link a');
+    if (!link) return;
+
+    player.addClass('iv-share-in-page');
+
+    link.addEventListener('click', function (event) {
+        event.preventDefault();
+
+        // Il pulsante lo aggiunge il plugin quando è pronto lui: si cerca al
+        // momento del clic, non prima.
+        var button = player.el().querySelector('.vjs-share-control');
+        if (button) button.click();
+    });
+}
+
 /* --- Riscontro a schermo ----------------------------------------------- */
 
 var iv_toast_timer = null;
@@ -996,6 +1025,7 @@ addEventListener('DOMContentLoaded', function () {
     }
 
     iv_setup_mini_player();
+    iv_move_share_to_page();
 });
 
 // Il riscontro a schermo parte solo dopo il primo avvio: il volume e la

@@ -492,6 +492,7 @@
     "videoinfo_watch_on_youTube": "Watch on YouTube",
     "videoinfo_youTube_embed_link": "Embed",
     "videoinfo_invidious_embed_link": "Embed Link",
+    "videoinfo_share_link": "Share",
     "download_subtitles": "Subtitles - `x` (.vtt)",
     "user_created_playlists": "`x` created playlists",
     "user_saved_playlists": "`x` saved playlists",

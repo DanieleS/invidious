@@ -122,6 +122,13 @@ we're going to need to do it here in order to allow for translations.
             <span id="embed-link">
                 <a id="link-iv-embed" data-base-url="<%= link_iv_embed %>" href="<%= link_iv_embed %>"><%= I18n.translate(locale, "videoinfo_invidious_embed_link") %></a>
             </span>
+            <%- # Condividere non è un comando del lettore: è una cosa che si fa
+                # alla pagina. Il pannello che si apre è quello di videojs-share,
+                # che il lettore tiene pronto ma non mostra più fra i comandi
+                # (vedi player.js). -%>
+            <span id="share-link">
+                <a href="#" role="button"><%= I18n.translate(locale, "videoinfo_share_link") %></a>
+            </span>
             <span id="annotations">
                 <% if params.annotations %>
                     <a href="/watch?<%= env.params.query %>&iv_load_policy=3"><%= I18n.translate(locale, "Hide annotations") %></a>
