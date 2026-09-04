@@ -291,6 +291,27 @@
   transition: none;
 }
 
+/* Col pannello aperto la barra resta, anche a schermo intero e anche col
+   puntatore fermo. Il pannello nasce attaccato alla barra: vederlo galleggiare
+   sul nulla mentre i comandi svaniscono sotto e' peggio che brutto, perche' se
+   ne va anche il pulsante con cui lo si chiude. `iv-panel-open` la mette
+   `IvPanel` sul player proprio per questo.
+
+   Il selettore e' lungo per necessita', non per vezzo: video.js nasconde la
+   barra con `.vjs-has-started.vjs-user-inactive.vjs-playing .vjs-control-bar`,
+   che pesa (0,4,0). Una regola piu' corta perde e non si vede niente —
+   `scripts/check-player-css-conflicts.py` lo dice prima di scoprirlo a mano. */
+.player-shell .video-js.iv-panel-open.vjs-user-inactive.vjs-playing .vjs-control-bar {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* E il puntatore serve: c'e' un menu da usare. */
+.video-js.iv-panel-open.vjs-user-inactive.vjs-playing .vjs-tech {
+  cursor: auto;
+}
+
 /* L'unica cosa che la plancia si tiene per sé: col mouse sopra, il comando si
    accende del rosso del sito invece di limitarsi a schiarire. */
 .player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar .vjs-button:hover {
