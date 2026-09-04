@@ -73,15 +73,28 @@
   cursor: none;
 }
 
-/* Pulsante grande di avvio */
+/* Pulsante grande di avvio
+ *
+ * Centra il suo contenuto con flex, e non con `line-height` pari all'altezza
+ * come fa video.js. Quel trucco funziona su del testo, non su un segnaposto
+ * `inline-flex` che contiene un SVG: un inline-flex senza testo dentro prende
+ * come linea di base il proprio bordo inferiore, che dentro una riga alta 76px
+ * cade sopra il centro. Misurato: 2 px di sollevamento, che sommati allo
+ * scostamento orizzontale facevano sembrare il triangolo buttato in un angolo.
+ * `padding: 0` perche' questo e' un <button>, e i browser gliene danno uno di
+ * default. */
 .video-js .vjs-big-play-button {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
+  padding: 0;
   width: 76px;
   height: 76px;
-  line-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   border: 0;
   border-radius: 50%;
   background: var(--chip-bg);
@@ -100,7 +113,6 @@
 .video-js .vjs-big-play-button .vjs-icon-placeholder svg {
   width: 30px;
   height: 30px;
-  margin-left: 3px; /* il triangolo pesa a sinistra: si ricentra a occhio */
 }
 
 /* Rotella di attesa */

@@ -88,7 +88,15 @@ if (CONFIG.videojs.max_goal_buffer_length) {
  * ========================================================================== */
 
 var IV_ICONS = {
-    play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-fill" d="M7 4.5v15l13-7.5z"/></svg>',
+    // Il triangolo e' centrato nel viewBox (5.5..18.5, centro 12) come lo e'
+    // pause (7..17). Prima era 7..20, cioe' spostato di 1,5 unita' a destra:
+    // uno scostamento ottico "alla Material", che pero' qui si sommava a un
+    // margin-left nel CSS e a un sollevamento del segnaposto, per un totale di
+    // 3,4 px a destra e 2 px in alto su un cerchio da 76. Se un giorno si
+    // vuole uno scostamento ottico, va messo qui e in un posto solo: cosi'
+    // vale per il pulsante grande e per quello della barra insieme, e play e
+    // pause continuano a scambiarsi nello stesso punto.
+    play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-fill" d="M5.5 4.5v15l13-7.5z"/></svg>',
     pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-fill" d="M7 4.5h3.6v15H7zM13.4 4.5H17v15h-3.6z"/></svg>',
     replay: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M20.4 12a8.4 8.4 0 1 1-2.6-6.1M20.6 3.4v4.2h-4.2"/></svg>',
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M12 4.6V1.4L7.6 5.4 12 9.4V6.2a5.6 5.6 0 1 1-5.6 5.6"/></svg>',
