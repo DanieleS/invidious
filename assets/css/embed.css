@@ -9,19 +9,25 @@
   z-index: -100;
 }
 
+/* Il collegamento «Invidious» dentro la barra dell'incorporamento: l'ordine lo
+   decide player.css insieme agli altri comandi, qui restano solo il testo e il
+   colore. Il ciano di prima era l'ultimo colore del lettore che non veniva dai
+   token. */
 .watch-on-invidious {
-  font-size: 1.3em !important;
-  font-weight: bold;
+  width: auto !important;
+  font-family: var(--font-ui);
+  font-size: var(--t-sm) !important;
+  font-weight: 600;
   white-space: nowrap;
-  margin: 0 1em 0 1em !important;
-  order: 3;
+  padding: 0 var(--s-3);
+  margin: 0 !important;
 }
 
 .watch-on-invidious > a {
-  color: white;
+  color: var(--on-media);
 }
 
 .watch-on-invidious > a:hover,
 .watch-on-invidious > a:focus {
-  color: rgba(0, 182, 240, 1);;
+  color: var(--accent-text);
 }

@@ -690,16 +690,28 @@
  * possiamo concedere, così un verticale diventa una colonna alta e centrata
  * invece di un 16:9 pieno di nero.
  */
+/*
+ * Il riquadro del lettore tiene solo l'immagine: la plancia dei comandi vive
+ * sotto, appesa al bordo inferiore (vedi player.css). Lo spazio che le serve
+ * è riservato qui con `--dock-h`, che il JS aggiorna con l'altezza vera della
+ * barra appena la misura — così una barra che va a capo su schermi stretti non
+ * finisce sopra il titolo.
+ *
+ * Niente `overflow: hidden`: taglierebbe la plancia. Gli angoli tondi stanno
+ * sul video e sulla barra, non su un contenitore che ritaglia.
+ */
 .player-shell {
   --ar: 1.7778;
+  --dock-h: 88px;
   position: relative;
   width: min(100%, calc(72vh * var(--ar)));
   aspect-ratio: var(--ar);
   margin-inline: auto;
-  border-radius: var(--r-panel);
-  overflow: hidden;
+  margin-bottom: var(--dock-h);
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
   background: #05070b;
   border: 1px solid var(--line);
+  border-bottom: 0;
 }
 
 .player-shell .video-js {

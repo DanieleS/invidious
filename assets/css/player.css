@@ -1,213 +1,66 @@
-/* Youtube player style */
-.video-js.player-style-youtube .vjs-progress-control {
-  height: 0;
+/*
+ * player.css — la skin del lettore.
+ *
+ * Il lettore ha due vestiti, non uno:
+ *
+ *   1. PLANCIA (predefinito sulla pagina di visione). I comandi escono
+ *      dall'immagine e stanno in una barra piena sotto il video, cucita al
+ *      riquadro. Non spariscono mai, non coprono i sottotitoli, non si
+ *      contendono lo spazio col dito.
+ *   2. SOVRAPPOSTO (schermo intero, incorporamento, orizzontale su telefono).
+ *      Lì sotto il video non c'è pagina, quindi i comandi tornano a
+ *      galleggiare sull'immagine con la solita sfumatura.
+ *
+ * Il vestito sovrapposto è la base — così l'incorporamento, che non ha nessun
+ * involucro attorno, funziona senza dover sapere niente. La plancia è la
+ * variante, e si attiva solo dentro `.player-shell` e fuori dallo schermo
+ * intero.
+ *
+ * Nessun colore letterale sopra l'immagine che non venga dai token: i comandi
+ * sopra il video usano `--on-media` e `--chip-bg`, che restano scuri in
+ * entrambi i temi; la plancia usa `--surface` e `--text`, che seguono il tema
+ * della pagina perché la barra è parte della pagina, non del video.
+ */
+
+.video-js {
+  /* Bersagli: 44 px è il minimo perché un dito lo prenda al primo colpo. */
+  --ctl: 44px;
+  --ctl-sm: 36px;
+
+  /* La barra di scorrimento: 6 px visibili, 20 px sensibili. */
+  --rail-h: 6px;
+  --rail-hit: 20px;
+  --rail-knob: 14px;
+
+  --dock-pad: 12px;
+
+  /* Colori dei comandi sopra l'immagine. */
+  --ctl-fg: var(--on-media);
+  --ctl-fg-dim: var(--on-media-2);
+  --ctl-hover: rgba(255, 255, 255, 0.14);
+  --ctl-track: rgba(255, 255, 255, 0.26);
+  --ctl-buffer: rgba(255, 255, 255, 0.44);
+  --panel-bg: rgba(10, 13, 19, 0.95);
+  --panel-line: rgba(255, 255, 255, 0.12);
+  --panel-hover: rgba(255, 255, 255, 0.09);
+
+  font-family: var(--font-ui);
+  overflow: visible;
 }
 
-.video-js.player-style-youtube .vjs-progress-control .vjs-progress-holder, .video-js.player-style-youtube .vjs-progress-control {
-  position: absolute;
-  right: 0;
-  left: 0;
-  width: 100%;
-  margin: 0;
+/* ==========================================================================
+   1. La superficie del video
+   ========================================================================== */
+
+.video-js .vjs-tech {
+  object-fit: contain;
 }
 
-.video-js.player-style-youtube .vjs-control-bar {
-  background: linear-gradient(rgba(0,0,0,0.1), rgba(0, 0, 0,0.5));
-}
-
-.video-js.player-style-youtube .vjs-slider {
-  background-color: rgba(255,255,255,0.2);
-}
-
-.video-js.player-style-youtube .vjs-load-progress > div {
-  background-color: rgba(255,255,255,0.5);
-}
-
-.video-js.player-style-youtube .vjs-play-progress {
-  background-color: red;
-}
-
-.video-js.player-style-youtube .vjs-progress-control:hover .vjs-progress-holder {
-  font-size: 15px;
-}
-
-.video-js.player-style-youtube .vjs-control-bar > .vjs-spacer {
-  flex: 1;
-  order: 2;
-}
-
-.video-js.player-style-youtube .vjs-play-progress .vjs-time-tooltip {
-  display: none;
-}
-
-.video-js.player-style-youtube .vjs-play-progress::before {
-  color: red;
-  font-size: 0.85em;
-  display: none;
-}
-
-.video-js.player-style-youtube .vjs-progress-holder:hover .vjs-play-progress::before {
-  display: unset;
-}
-
-.video-js.player-style-youtube .vjs-control-bar {
-  display: flex;
-  flex-direction: row;
-}
-
-.video-js.player-style-youtube .vjs-menu-button-popup .vjs-menu {
-  margin-bottom: 2em;
-  padding-top: 2em
-}
-
-.video-js.player-style-youtube .vjs-progress-control .vjs-progress-holder, .video-js.player-style-youtube .vjs-progress-control {height: 5px;
-margin-bottom: 10px;}
-
-ul.vjs-menu-content::-webkit-scrollbar {
-  display: none;
-}
-
-.vjs-user-inactive {
-  cursor: none;
-}
-
-.video-js .vjs-text-track-display > div > div > div {
-  background-color: rgba(0, 0, 0, 0.75) !important;
-  border-radius: 9px !important;
-  padding: 5px !important;
-  line-height: 1.5 !important;
-}
-
-.vjs-play-control,
-.vjs-volume-panel,
-.vjs-current-time,
-.vjs-time-control,
-.vjs-duration,
-.vjs-progress-control,
-.vjs-remaining-time {
-  order: 1;
-}
-
-.vjs-captions-button {
-  order: 2;
-}
-
-.vjs-audio-button {
-  order: 3;
-}
-
-.vjs-quality-selector,
-.video-js .vjs-http-source-selector {
-  order: 4;
-}
-
-.vjs-playback-rate {
-  order: 5;
-}
-
-.vjs-share-control {
-  order: 6;
-}
-
-.vjs-fullscreen-control {
-  order: 7;
-}
-
-.vjs-playback-rate > .vjs-menu {
-  width: 50px;
-}
-
-.vjs-control-bar {
-  display: flex;
-  flex-direction: row;
-  scrollbar-width: none;
-}
-
-.vjs-control-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.video-js .vjs-icon-cog {
-  font-size: 18px;
-}
-
-.video-js .vjs-control-bar,
-.vjs-menu-button-popup .vjs-menu .vjs-menu-content {
-  background-color: rgba(35, 35, 35, 0.75);
-}
-
-.vjs-menu li.vjs-menu-item:focus,
-.vjs-menu li.vjs-menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.75);
-  color: rgba(49, 49, 51, 0.75);
-}
-
-.vjs-menu li.vjs-selected,
-.vjs-menu li.vjs-selected:focus,
-.vjs-menu li.vjs-selected:hover {
-  background-color: rgba(0, 182, 240, 0.75);
-}
-
-/* Progress Bar */
-.video-js .vjs-slider {
-  background-color: rgba(15, 15, 15, 0.5);
-}
-
-.video-js .vjs-load-progress,
-.video-js .vjs-load-progress div {
-  background: rgba(87, 87, 88, 1);
-}
-
-.video-js .vjs-slider:hover,
-.video-js button:hover {
-  color: rgba(0, 182, 240, 1);
-}
-
-.video-js.player-style-invidious .vjs-play-progress {
-  background-color: rgba(0, 182, 240, 1);
-}
-
-/* Overlay */
-.video-js .vjs-overlay {
-  background-color: rgba(35, 35, 35, 0.75) !important;
-}
-.video-js .vjs-overlay * {
-  color: rgba(255, 255, 255, 1) !important;
-  text-align: center;
-}
-
-/* ProgressBar marker */
-.vjs-marker {
-  background-color: rgba(255, 255, 255, 1);
-  z-index: 0;
-}
-
-/* Big "Play" Button */
-.video-js .vjs-big-play-button {
-  background-color: rgba(35, 35, 35, 0.5);
-  /* Centrato per tutti gli stili: la regola equivalente esisteva solo per
-     player-style-youtube, quindi con gli altri il pulsante restava
-     nell'angolo in alto a sinistra. */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  margin: 0;
-}
-
-.video-js:hover .vjs-big-play-button {
-  background-color: rgba(35, 35, 35, 0.75);
-}
-
-.video-js .vjs-current-time,
-.video-js .vjs-time-divider,
-.video-js .vjs-duration {
-  display: block;
-}
-
-.video-js .vjs-time-divider {
-  min-width: 0px;
-  padding-left: 0px;
-  padding-right: 0px;
+/* Gli angoli tondi stanno sul video, non su un contenitore che ritaglia: la
+   barra della plancia deve poter uscire dal riquadro senza essere tagliata. */
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-tech,
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-poster {
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
 }
 
 .video-js .vjs-poster {
@@ -215,61 +68,853 @@ ul.vjs-menu-content::-webkit-scrollbar {
   object-fit: cover;
 }
 
-/*
- * Dimensioni del lettore.
- *
- * Prima qui c'era `height: 0` con `padding-bottom: 82vh`, il modo in cui si
- * facevano i riquadri proporzionati prima che esistesse `aspect-ratio`. Il
- * problema è che 82vh non è un rapporto: è una frazione dell'altezza della
- * finestra. Su un desktop in orizzontale somigliava per caso a un 16:9, ma su
- * un telefono in verticale diventa una colonna nera altissima con il video
- * schiacciato in cima.
- *
- * Ora il riquadro è un 16:9 dichiarato, e la larghezza è limitata in funzione
- * dell'altezza concessa: su schermi bassi e larghi il video si restringe per
- * lasciare spazio al titolo, su telefono prende tutta la larghezza e resta
- * alto quanto deve.
- */
-.player-dimensions.vjs-fluid {
-  padding-top: 0;
+/* Il puntatore sparisce solo sull'immagine, mai sui comandi. */
+.video-js.vjs-user-inactive.vjs-playing .vjs-tech {
+  cursor: none;
 }
 
+/* Pulsante grande di avvio */
+.video-js .vjs-big-play-button {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  width: 76px;
+  height: 76px;
+  line-height: 76px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--chip-bg);
+  color: var(--on-media);
+  backdrop-filter: blur(8px);
+  transition: background 0.16s var(--ease), transform 0.16s var(--ease);
+}
+
+.video-js:hover .vjs-big-play-button,
+.video-js .vjs-big-play-button:focus {
+  background: var(--accent);
+  color: var(--accent-on);
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.video-js .vjs-big-play-button .vjs-icon-placeholder svg {
+  width: 30px;
+  height: 30px;
+  margin-left: 3px; /* il triangolo pesa a sinistra: si ricentra a occhio */
+}
+
+/* Rotella di attesa */
+.video-js .vjs-loading-spinner {
+  border-color: var(--accent);
+  border-top-color: transparent;
+  border-width: 3px;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+}
+
+.video-js .vjs-loading-spinner:before,
+.video-js .vjs-loading-spinner:after {
+  display: none;
+}
+
+/* Sottotitoli */
+.video-js .vjs-text-track-display > div > div > div {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  border-radius: var(--r-ctrl) !important;
+  padding: 4px 10px !important;
+  line-height: 1.45 !important;
+  font-family: var(--font-ui) !important;
+}
+
+/* ==========================================================================
+   2. La barra: base sovrapposta (schermo intero, incorporamento)
+   ========================================================================== */
+
+/* `display: flex` invece del `none` di serie: la barra si vede da subito,
+   senza aspettare il primo fotogramma. Prima, con la plancia, la pagina
+   sarebbe saltata di ottanta pixel al primo play. */
+.video-js .vjs-control-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  height: auto;
+  padding: 28px var(--dock-pad) 8px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.45) 55%, transparent);
+  color: var(--ctl-fg);
+}
+
+/* Ordine: la barra di scorrimento è una riga a sé, poi trasporto a sinistra
+   e impostazioni a destra. Con `order` l'ordine non dipende da chi ha
+   aggiunto il pulsante — i plugin appendono in fondo, ma finiscono al posto
+   giusto lo stesso. */
+.video-js .vjs-progress-control { order: 0; flex: 1 0 100%; }
+.video-js .vjs-play-control { order: 1; }
+.video-js .iv-seek-back { order: 2; }
+.video-js .iv-seek-fwd { order: 3; }
+.video-js .vjs-volume-panel { order: 4; }
+.video-js .vjs-current-time { order: 5; }
+.video-js .vjs-time-divider { order: 6; }
+.video-js .vjs-duration { order: 7; }
+.video-js .vjs-remaining-time { order: 8; }
+.video-js .vjs-live-control { order: 9; }
+.video-js .vjs-spacer { order: 20; flex: 1 1 auto; }
+.video-js .iv-pills { order: 30; }
+.video-js .vjs-share-control { order: 40; }
+.video-js .watch-on-invidious { order: 45; }
+.video-js .vjs-fullscreen-control { order: 50; }
+
+/* I menù originali restano vivi ma invisibili: la logica di cambio qualità,
+   sottotitoli, traccia audio e velocità è la loro, il pannello nuovo è solo
+   una faccia diversa sopra gli stessi comandi. */
+.video-js .vjs-captions-button,
+.video-js .vjs-subs-caps-button,
+.video-js .vjs-audio-button,
+.video-js .vjs-playback-rate,
+.video-js .vjs-quality-selector,
+.video-js .vjs-http-source-selector,
+.video-js .vjs-subtitles-button,
+.video-js .vjs-descriptions-button,
+.video-js .vjs-chapters-button {
+  display: none !important;
+}
+
+/* ==========================================================================
+   3. La plancia: la barra esce dall'immagine
+   ========================================================================== */
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar {
+  position: absolute;
+  top: 100%;
+  bottom: auto;
+  /* I bordi laterali della plancia devono cadere sulla stessa riga di quelli
+     del riquadro: il -1px li fa combaciare invece di sdoppiarli. */
+  left: -1px;
+  right: -1px;
+  width: auto;
+
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 var(--r-panel) var(--r-panel);
+  color: var(--text);
+  padding: 6px var(--dock-pad) 10px;
+  gap: 4px;
+}
+
+/* Nella plancia i comandi non spariscono mai: né quando il puntatore sta
+   fermo, né prima che il video sia partito. */
+.player-shell .video-js:not(.vjs-fullscreen).vjs-user-inactive.vjs-playing .vjs-control-bar,
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: none;
+}
+
+/* Colori della plancia: è parte della pagina, quindi segue il tema. */
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar .vjs-button,
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar .vjs-time-control {
+  color: var(--text);
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar .vjs-button:hover {
+  background: var(--surface-hi);
+  color: var(--accent-text);
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-progress-holder {
+  background: var(--line);
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-load-progress,
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-load-progress div {
+  background: var(--surface-hi);
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-time-control {
+  color: var(--text-2);
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-current-time {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   4. Barra di scorrimento
+   ========================================================================== */
+
+.video-js .vjs-progress-control {
+  height: var(--rail-hit);
+  min-height: var(--rail-hit);
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+/* Il selettore lungo serve: video.js infila 10 px di margine ai lati della
+   barra con una regola più specifica, e la barra deve arrivare al bordo. */
+.video-js .vjs-progress-control .vjs-progress-holder {
+  height: var(--rail-h);
+  width: 100%;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--ctl-track);
+  transition: height 0.14s var(--ease);
+  font-size: 1em; /* le anteprime di video.js si dimensionano in em: fermiamole */
+}
+
+.video-js .vjs-progress-control:hover .vjs-progress-holder,
+.video-js .vjs-progress-control:focus-within .vjs-progress-holder {
+  height: calc(var(--rail-h) + 3px);
+}
+
+.video-js .vjs-play-progress,
+.video-js .vjs-load-progress,
+.video-js .vjs-load-progress div {
+  border-radius: 999px;
+}
+
+.video-js .vjs-load-progress,
+.video-js .vjs-load-progress div {
+  background: var(--ctl-buffer);
+}
+
+.video-js .vjs-play-progress {
+  background: var(--accent);
+}
+
+/* La manopola: il glifo del carattere di video.js diventa un cerchio vero. */
+.video-js .vjs-play-progress:before {
+  content: '';
+  position: absolute;
+  right: calc(var(--rail-knob) / -2);
+  top: 50%;
+  width: var(--rail-knob);
+  height: var(--rail-knob);
+  border-radius: 50%;
+  background: var(--accent-hi);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+  transform: translateY(-50%) scale(0);
+  transition: transform 0.14s var(--ease);
+}
+
+.video-js .vjs-progress-control:hover .vjs-play-progress:before,
+.video-js .vjs-progress-control:focus-within .vjs-play-progress:before,
+.video-js.vjs-touch-enabled .vjs-play-progress:before {
+  transform: translateY(-50%) scale(1);
+}
+
+/* L'orario sotto il puntatore */
+.video-js .vjs-time-tooltip,
+.video-js .vjs-mouse-display .vjs-time-tooltip {
+  background: var(--chip-bg);
+  color: var(--chip-text, #fff);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  border-radius: var(--r-chip);
+  padding: 3px 6px;
+  box-shadow: none;
+}
+
+.video-js .vjs-play-progress .vjs-time-tooltip {
+  display: none;
+}
+
+.video-js .vjs-mouse-display {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Anteprima del fotogramma (videojs-vtt-thumbnails) */
+.video-js .vjs-vtt-thumbnail-display {
+  border: 1px solid var(--panel-line);
+  border-radius: var(--r-ctrl);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  bottom: calc(var(--rail-hit) + 6px);
+}
+
+/* Marcatori di inizio e fine (videojs-markers) */
+.video-js .vjs-marker {
+  background-color: var(--warn);
+  border-radius: 999px;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   5. Pulsanti
+   ========================================================================== */
+
+/* Il bersaglio da 44 px vale per i pulsanti. La barra di scorrimento, il
+   gruppo del volume e l'orario sono anche loro `.vjs-control`, ma non sono
+   pulsanti: se rientrassero qui verrebbero schiacciati in un quadrato. */
+.video-js .vjs-control-bar .vjs-button {
+  width: var(--ctl);
+  height: var(--ctl);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-ctrl);
+  color: var(--ctl-fg);
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+
+.video-js .vjs-control-bar .vjs-button:hover {
+  background: var(--ctl-hover);
+}
+
+.video-js .vjs-control-bar .vjs-button:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+/* video.js disegna le icone con un carattere; noi usiamo SVG veri, iniettati
+   dal JS dentro il segnaposto. */
+.video-js .vjs-icon-placeholder:before {
+  display: none !important;
+}
+
+/* Alcuni pulsanti — quello di condivisione del plugin, per esempio — portano
+   il glifo sul pulsante stesso invece che sul segnaposto: senza questa riga si
+   vedono due icone, la loro e la nostra. */
+.video-js .vjs-control-bar .vjs-button:before,
+.video-js .vjs-big-play-button:before {
+  content: none !important;
+}
+
+.video-js .vjs-icon-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-js .vjs-icon-placeholder svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.video-js .iv-icon-stroke {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.video-js .iv-icon-fill {
+  fill: currentColor;
+}
+
+/* Salta avanti e indietro: l'icona porta il numero di secondi. */
+.video-js .iv-seek {
+  position: relative;
+}
+
+.video-js .iv-seek .iv-seek-num {
+  position: absolute;
+  bottom: 7px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Volume: la barra si apre al passaggio, ma resta larga abbastanza da poterla
+   prendere. Su tocco sparisce del tutto (c'è il volume di sistema). */
+.video-js .vjs-volume-panel {
+  width: auto;
+}
+
+.video-js .vjs-volume-panel .vjs-mute-control {
+  width: var(--ctl);
+  height: var(--ctl);
+}
+
+.video-js .vjs-volume-control.vjs-volume-horizontal {
+  width: 0;
+  height: var(--ctl);
+  transition: width 0.18s var(--ease);
+}
+
+.video-js .vjs-volume-panel:hover .vjs-volume-control.vjs-volume-horizontal,
+.video-js .vjs-volume-panel:focus-within .vjs-volume-control.vjs-volume-horizontal {
+  width: 72px;
+  margin-right: 6px;
+}
+
+.video-js .vjs-volume-bar {
+  margin: 0;
+  background: var(--ctl-track);
+  border-radius: 999px;
+  height: 4px;
+}
+
+.video-js .vjs-volume-level {
+  background: var(--ctl-fg);
+  border-radius: 999px;
+}
+
+.video-js .vjs-volume-level:before {
+  display: none;
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-volume-bar {
+  background: var(--line);
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-volume-level {
+  background: var(--text-2);
+}
+
+/* Orario */
+.video-js .vjs-time-control {
+  display: flex;
+  align-items: center;
+  width: auto;
+  min-width: 0;
+  padding: 0 3px;
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--ctl);
+  height: var(--ctl);
+  color: var(--ctl-fg);
+}
+
+.video-js .vjs-time-divider {
+  padding: 0;
+  min-width: 0;
+  color: var(--ctl-fg-dim);
+}
+
+.video-js .vjs-duration {
+  color: var(--ctl-fg-dim);
+  padding-left: 0;
+}
+
+.video-js .vjs-remaining-time {
+  display: none;
+}
+
+/* Diretta */
+.video-js .vjs-live-control {
+  display: flex;
+  align-items: center;
+  width: auto;
+  padding: 0 8px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.video-js .vjs-seek-to-live-control {
+  display: flex;
+  align-items: center;
+  width: auto;
+  padding: 0 10px;
+  height: var(--ctl-sm);
+  border-radius: var(--r-ctrl);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.video-js .vjs-seek-to-live-control .vjs-icon-placeholder {
+  color: var(--text-3);
+  margin-right: 5px;
+}
+
+.video-js .vjs-live-edge .vjs-icon-placeholder,
+.video-js .vjs-seek-to-live-control.vjs-at-live-edge .vjs-icon-placeholder {
+  color: var(--accent);
+}
+
+/* ==========================================================================
+   6. Pillole e pannello impostazioni
+   ========================================================================== */
+
+.video-js .iv-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.video-js .iv-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.video-js .iv-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  width: auto !important;
+  height: var(--ctl-sm) !important;
+  padding: 0 10px;
+  border: 1px solid var(--panel-line);
+  border-radius: var(--r-ctrl);
+  background: transparent;
+  color: var(--ctl-fg-dim);
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.14s var(--ease), color 0.14s var(--ease), background 0.14s var(--ease);
+}
+
+.video-js .iv-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+.video-js .iv-pill.iv-pill-on {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+.video-js .iv-pill svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Una pillola con la sola icona (sottotitoli spenti, impostazioni) ha
+   l'etichetta vuota: senza questa riga resta comunque una voce del flex, si
+   prende i 5 px di distanza e sposta l'icona di 2,5 px a sinistra. */
+.video-js .iv-pill-label:empty {
+  display: none;
+}
+
+.video-js .iv-pill .vjs-control-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .iv-pill {
+  border-color: var(--line);
+  color: var(--text-2);
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .iv-pill:hover,
+.player-shell .video-js:not(.vjs-fullscreen) .iv-pill.iv-pill-on {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+/* Il pannello: uno solo, al posto di quattro tendine. Sta sempre sopra
+   l'immagine, appoggiato in basso a destra, sia in plancia che sovrapposto.
+   Cambia solo quanto deve stare alzato: se la barra galleggia sull'immagine,
+   il pannello le si appoggia sopra; se sta sotto, può scendere fino al bordo. */
+.video-js .iv-panel { --panel-bottom: 84px; }
+
+.player-shell .video-js:not(.vjs-fullscreen) .iv-panel { --panel-bottom: 12px; }
+
+.video-js .iv-panel {
+  position: absolute;
+  right: var(--dock-pad);
+  bottom: var(--panel-bottom, 12px);
+  z-index: 12;
+  width: min(280px, calc(100% - 2 * var(--dock-pad)));
+  max-height: min(320px, calc(100% - 24px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: none;
+  flex-direction: column;
+  padding: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-line);
+  border-radius: var(--r-panel);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  color: var(--on-media);
+  scrollbar-width: thin;
+}
+
+.video-js .iv-panel.iv-panel-open {
+  display: flex;
+}
+
+.video-js .iv-panel-title {
+  font-family: var(--font-display);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-media-2);
+  padding: 10px 10px 5px;
+}
+
+.video-js .iv-panel-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--r-ctrl);
+  background: transparent;
+  color: var(--on-media);
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.video-js .iv-panel-item:hover {
+  background: var(--panel-hover);
+}
+
+.video-js .iv-panel-item:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: -2px;
+}
+
+.video-js .iv-panel-item[aria-checked='true'] {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.video-js .iv-panel-item svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--on-media-2);
+}
+
+/* La spunta si vede solo dove c'è qualcosa di scelto; la freccia di discesa
+   e quella di ritorno si vedono sempre. */
+.video-js .iv-panel-item[role='menuitemradio'] svg {
+  opacity: 0;
+}
+
+.video-js .iv-panel-item[aria-checked='true'] svg {
+  opacity: 1;
+  color: var(--accent-text);
+}
+
+.video-js .iv-panel-item > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-js .iv-panel-value {
+  flex: none;
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: var(--t-xs);
+}
+
+/* L'intestazione della sezione: il ritorno all'indice. */
+.video-js .iv-panel-head {
+  color: var(--on-media-2);
+  font-weight: 600;
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  gap: var(--s-2);
+  justify-content: flex-start;
+}
+
+.video-js .iv-panel-head svg {
+  color: inherit;
+}
+
+.video-js .iv-panel-sep {
+  height: 1px;
+  margin: 5px 8px;
+  background: var(--panel-line);
+}
+
+/* ==========================================================================
+   7. Riscontro dei gesti e delle scorciatoie
+   ========================================================================== */
+
+.video-js .iv-toast {
+  position: absolute;
+  top: var(--s-4);
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  z-index: 11;
+  padding: 5px 13px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  border: 1px solid var(--panel-line);
+  color: var(--on-media);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
+}
+
+.video-js .iv-toast.iv-toast-on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
+   8. Schermo intero e orizzontale
+   ========================================================================== */
+
+.video-js.vjs-fullscreen .vjs-control-bar {
+  padding-bottom: 12px;
+}
+
+.video-js.vjs-fullscreen .vjs-tech {
+  border-radius: 0;
+}
+
+/* ==========================================================================
+   9. Tocco
+   ========================================================================== */
+
+/* Il volume di sistema c'è già: la barra del volume sul telefono è solo
+   spazio rubato ai comandi che servono. */
+.video-js.vjs-touch-enabled .vjs-volume-panel {
+  display: none;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .video-js {
+    --ctl: 44px;
+    --dock-pad: 8px;
+  }
+
+  .video-js .vjs-time-control {
+    font-size: var(--t-xs);
+    padding: 0 2px;
+  }
+
+  /* Sotto una certa larghezza i comandi si tolgono per priorità: prima il
+     volume (c'è quello di sistema), poi la durata. Non si lascia mai la barra
+     traboccare di lato con la scrollbar nascosta, com'era prima. */
+  .video-js .vjs-volume-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .video-js .vjs-time-divider,
+  .video-js .vjs-duration {
+    display: none;
+  }
+}
+
+/* Telefono in orizzontale: la pagina attorno non esiste più, quindi la
+   plancia non ha senso — i comandi tornano sull'immagine. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .player-shell .video-js:not(.vjs-fullscreen) .iv-panel {
+    --panel-bottom: 76px;
+  }
+
+  .player-shell .video-js .vjs-control-bar {
+    position: absolute;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.45) 55%, transparent);
+    border: 0;
+    border-radius: 0;
+    color: var(--on-media);
+    padding: 28px var(--dock-pad) 8px;
+  }
+}
+
+/* ==========================================================================
+   10. Roba dei plugin
+   ========================================================================== */
+
+/* videojs-share: il pannello di condivisione */
+.video-js .vjs-share {
+  background: var(--panel-bg);
+  color: var(--on-media);
+  border-radius: var(--r-panel);
+}
+
+.video-js .vjs-share-input input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--panel-line);
+  border-radius: var(--r-ctrl);
+  color: var(--on-media);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+}
+
+.video-js .vjs-modal-dialog-content {
+  overflow-x: hidden;
+}
+
+/* Il testo di errore */
+.video-js .vjs-error-display .vjs-modal-dialog-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: var(--t-base);
+}
+
+/* videojs-overlay (titolo sull'incorporamento) */
+.video-js .vjs-overlay {
+  background-color: var(--chip-bg) !important;
+  border-radius: var(--r-ctrl);
+  font-family: var(--font-ui);
+}
+
+.video-js .vjs-overlay * {
+  color: var(--on-media) !important;
+  text-align: center;
+}
+
+/* videojs-mobile-ui aggiunge il suo strato di gesti: lo lasciamo lavorare ma
+   non deve mettere le mani sulla barra, che ora vive fuori dall'immagine. */
+.video-js .vjs-touch-overlay {
+  bottom: 0;
+}
+
+.player-shell .video-js:not(.vjs-fullscreen) .vjs-touch-overlay {
+  height: 100%;
+}
+
+/* ==========================================================================
+   11. Prima che il JS arrivi
+   ========================================================================== */
+
+/* Il lettore senza JavaScript resta un <video> normale: deve comunque stare
+   dentro il riquadro e avere gli angoli giusti. */
 video.video-js {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-#player-container {
-  position: relative;
-  padding: 0;
-  margin-inline: auto;
-}
-
-.mobile-operations-bar {
-  display: flex;
-  position: absolute;
-  top: 0;
-  right: 1px !important;
-  left: initial !important;
-  width: initial !important;
-}
-
-.mobile-operations-bar ul {
-  position: absolute !important;
-  bottom: unset !important;
-  top: 1.5em;
-}
-
-@media screen and (max-width: 700px) {
-  .video-js .vjs-share {
-    justify-content: unset;
-  }
-}
-
-@media screen and (max-width: 650px) {
-  .vjs-modal-dialog-content {
-    overflow-x: hidden;
-  }
+  border-radius: var(--r-panel);
 }

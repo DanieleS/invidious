@@ -11,19 +11,25 @@ var options = {
     textOpacity: ['0.5', '1'],
     persistTextTrackSettings: true,
     controlBar: {
+        // La barra di scorrimento apre l'elenco perché nel nuovo disegno è una
+        // riga a sé, sopra i pulsanti. I quattro menù (sottotitoli, traccia
+        // audio, qualità, velocità) restano qui dentro ma il CSS li nasconde:
+        // servono solo come motore del pannello unico, che è `ivPills` +
+        // `IvPanel`.
         children: [
+            'progressControl',
             'playToggle',
+            'ivSeekBack',
+            'ivSeekForward',
             'volumePanel',
             'currentTimeDisplay',
             'timeDivider',
             'durationDisplay',
-            'progressControl',
-            'remainingTimeDisplay',
             'Spacer',
             'captionsButton',
             'audioTrackButton',
-            'qualitySelector',
             'playbackRateMenuButton',
+            'ivPills',
             'fullscreenToggle'
         ]
     },
@@ -63,7 +69,608 @@ if (CONFIG.videojs.max_goal_buffer_length) {
     videojs.Vhs.MAX_GOAL_BUFFER_LENGTH = CONFIG.videojs.max_goal_buffer_length;
 }
 
+/* ==========================================================================
+ * L'interfaccia del lettore
+ *
+ * Tre pezzi, tutti registrati prima che il lettore nasca perché la barra dei
+ * comandi li cerca per nome:
+ *
+ *   - i pulsanti di salto (10 secondi avanti e indietro);
+ *   - le pillole, cioè i comandi scritti a parole (velocità, qualità,
+ *     sottotitoli) invece che quattro icone da indovinare;
+ *   - il pannello, uno solo, che sostituisce le quattro tendine separate.
+ *
+ * Il pannello non riscrive la logica di nessuno: i menù originali di video.js
+ * e dei plugin restano nella barra, nascosti dal CSS, e il pannello li legge e
+ * ci clicca dentro. Così cambiare qualità continua a passare per il codice che
+ * lo sa fare (silvermine o http-source-selector, a seconda del flusso), e noi
+ * ci mettiamo solo la faccia.
+ * ========================================================================== */
+
+var IV_ICONS = {
+    play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-fill" d="M7 4.5v15l13-7.5z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-fill" d="M7 4.5h3.6v15H7zM13.4 4.5H17v15h-3.6z"/></svg>',
+    replay: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M20.4 12a8.4 8.4 0 1 1-2.6-6.1M20.6 3.4v4.2h-4.2"/></svg>',
+    back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M12 4.6V1.4L7.6 5.4 12 9.4V6.2a5.6 5.6 0 1 1-5.6 5.6"/></svg>',
+    forward: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M12 4.6V1.4l4.4 4-4.4 4V6.2a5.6 5.6 0 1 0 5.6 5.6"/></svg>',
+    volume: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M4 9.5h3.4L12 5.5v13L7.4 14.5H4zM15.8 9.4a4 4 0 0 1 0 5.2M18.4 7a7.4 7.4 0 0 1 0 10"/></svg>',
+    volumeLow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M4 9.5h3.4L12 5.5v13L7.4 14.5H4zM15.8 9.4a4 4 0 0 1 0 5.2"/></svg>',
+    mute: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M4 9.5h3.4L12 5.5v13L7.4 14.5H4zM16 9.8l5 4.4M21 9.8l-5 4.4"/></svg>',
+    captions: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect class="iv-icon-stroke" x="2.5" y="5" width="19" height="14" rx="3.5"/><path class="iv-icon-stroke" d="M10.2 10.6a2.6 2.6 0 1 0 0 2.9M17.6 10.6a2.6 2.6 0 1 0 0 2.9"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M3 7.5h9.5M17.5 7.5H21M3 16.5h3.5M11.5 16.5H21"/><circle class="iv-icon-stroke" cx="15" cy="7.5" r="2.6"/><circle class="iv-icon-stroke" cx="9" cy="16.5" r="2.6"/></svg>',
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M8.6 13.4l6.8 3.6M15.4 7l-6.8 3.6"/><circle class="iv-icon-stroke" cx="17.8" cy="5.6" r="2.8"/><circle class="iv-icon-stroke" cx="6.2" cy="12" r="2.8"/><circle class="iv-icon-stroke" cx="17.8" cy="18.4" r="2.8"/></svg>',
+    enterFullscreen: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M4 9V4.5h5M15 4.5h5V9M20 15v4.5h-5M9 19.5H4v-4.5"/></svg>',
+    exitFullscreen: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M9 4.5V9H4.5M19.5 9H15V4.5M15 19.5V15h4.5M4.5 15H9v4.5"/></svg>',
+    check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M4.5 12.5l5 5 10-11"/></svg>',
+    chevron: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M9.5 5l7 7-7 7"/></svg>',
+    chevronBack: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M14.5 5l-7 7 7 7"/></svg>'
+};
+
+/**
+ * Mette un'icona SVG dentro il segnaposto che video.js riserva al suo
+ * carattere di icone (che il CSS spegne).
+ *
+ * @param {Element} root Elemento radice in cui cercare
+ * @param {String} selector Selettore del comando
+ * @param {String} icon Nome dell'icona in IV_ICONS
+ */
+function iv_set_icon(root, selector, icon) {
+    if (!root) return;
+    var host = root.querySelector(selector);
+    if (!host) return;
+    var slot = host.querySelector('.vjs-icon-placeholder');
+    if (!slot) {
+        slot = document.createElement('span');
+        slot.className = 'vjs-icon-placeholder';
+        host.insertBefore(slot, host.firstChild);
+    }
+    if (slot.getAttribute('data-iv-icon') === icon) return;
+    slot.setAttribute('data-iv-icon', icon);
+    slot.innerHTML = IV_ICONS[icon] || '';
+}
+
+/**
+ * Legge le voci di un menù di video.js (o di un plugin) direttamente dal DOM.
+ *
+ * Passare per il DOM invece che per i componenti ci rende indifferenti a come
+ * ciascun plugin ha impacchettato il suo menù: a noi serve solo un elenco di
+ * voci con un'etichetta, uno stato e un posto dove cliccare.
+ *
+ * @param {Element} root Elemento del lettore
+ * @param {Array<String>} selectors Selettori possibili, in ordine di preferenza
+ * @returns {Array<{el: Element, label: String, selected: Boolean}>}
+ */
+function iv_read_menu(root, selectors) {
+    for (var i = 0; i < selectors.length; i++) {
+        var host = root.querySelector(selectors[i]);
+        if (!host) continue;
+
+        var nodes = host.querySelectorAll('.vjs-menu-item');
+        if (!nodes.length) continue;
+
+        var items = [];
+        for (var j = 0; j < nodes.length; j++) {
+            var node = nodes[j];
+            var text = node.querySelector('.vjs-menu-item-text');
+            items.push({
+                el: node,
+                label: (text ? text.textContent : node.textContent).trim(),
+                selected: node.classList.contains('vjs-selected')
+            });
+        }
+        return items;
+    }
+    return [];
+}
+
+/** Le sezioni del pannello, ognuna appoggiata al menù originale che la sa fare. */
+var IV_SECTIONS = [
+    { id: 'quality', title: 'Quality', selectors: ['.vjs-quality-selector', '.vjs-http-source-selector'] },
+    { id: 'speed', title: 'Playback Rate', selectors: ['.vjs-playback-rate'] },
+    { id: 'captions', title: 'Subtitles', selectors: ['.vjs-captions-button', '.vjs-subs-caps-button'] },
+    { id: 'audio', title: 'Audio Track', selectors: ['.vjs-audio-button'] }
+];
+
+/**
+ * Dice se una voce di menù è una scelta (una qualità, una lingua) oppure una
+ * voce di servizio, come «impostazioni sottotitoli», che apre un'altra cosa.
+ *
+ * @param {Object} item Voce restituita da iv_read_menu
+ * @returns {Boolean}
+ */
+function iv_is_choice(item) {
+    return !item.el.classList.contains('vjs-texttrack-settings');
+}
+
+/**
+ * Restituisce la traccia di sottotitoli accesa, se c'è.
+ *
+ * @param {Object} p Lettore
+ * @returns {TextTrack|null}
+ */
+function iv_showing_caption(p) {
+    var tracks = p.textTracks();
+    for (var i = 0; i < tracks.length; i++) {
+        var track = tracks[i];
+        var is_caption = track.kind === 'captions' || track.kind === 'subtitles';
+        if (is_caption && track.mode === 'showing') return track;
+    }
+    return null;
+}
+
+var Component = videojs.getComponent('Component');
+var Button = videojs.getComponent('Button');
+
+/* --- Salta indietro / avanti ------------------------------------------- */
+
+/**
+ * @param {String} name Nome con cui registrare il componente
+ * @param {String} css Classe che distingue avanti da indietro
+ * @param {Number} delta Secondi di salto (negativo per indietro)
+ * @param {String} icon Nome dell'icona
+ */
+function iv_register_seek(name, css, delta, icon) {
+    var Seek = videojs.extend(Button, {
+        constructor: function (p, opts) {
+            Button.call(this, p, opts);
+            this.controlText((delta > 0 ? 'Forward ' : 'Back ') + Math.abs(delta) + ' seconds');
+
+            var slot = this.el().querySelector('.vjs-icon-placeholder');
+            slot.innerHTML = IV_ICONS[icon] +
+                '<span class="iv-seek-num">' + Math.abs(delta) + '</span>';
+        },
+
+        buildCSSClass: function () {
+            return 'vjs-control vjs-button iv-seek ' + css;
+        },
+
+        handleClick: function () {
+            var p = this.player();
+            var step = delta * p.playbackRate();
+            var duration = p.duration() || 0;
+            var target = p.currentTime() + step;
+
+            p.currentTime(duration ? helpers.clamp(target, 0, duration) : Math.max(0, target));
+            iv_toast((delta > 0 ? '+' : '−') + Math.abs(delta) + ' s');
+        }
+    });
+
+    videojs.registerComponent(name, Seek);
+}
+
+iv_register_seek('ivSeekBack', 'iv-seek-back', -10, 'back');
+iv_register_seek('ivSeekForward', 'iv-seek-fwd', 10, 'forward');
+
+/* --- Le pillole -------------------------------------------------------- */
+
+var IvPill = videojs.extend(Button, {
+    constructor: function (p, opts) {
+        Button.call(this, p, opts);
+        this.section_ = opts.section;
+
+        this.label_ = document.createElement('span');
+        this.label_.className = 'iv-pill-label';
+        this.el().appendChild(this.label_);
+
+        if (opts.icon) {
+            this.el().querySelector('.vjs-icon-placeholder').innerHTML = IV_ICONS[opts.icon];
+        }
+        this.controlText(opts.text || '');
+    },
+
+    buildCSSClass: function () {
+        return 'vjs-control vjs-button iv-pill iv-pill-' + (this.options_.section || 'more');
+    },
+
+    /**
+     * @param {String} text Etichetta visibile
+     * @param {Boolean} on Se il comando è attivo
+     */
+    setLabel: function (text, on) {
+        if (this.label_.textContent !== text) this.label_.textContent = text;
+        this.toggleClass('iv-pill-on', !!on);
+    },
+
+    handleClick: function () {
+        var panel = this.player().getChild('IvPanel');
+        if (this.options_.onClick) return this.options_.onClick.call(this);
+        if (panel) panel.toggle(this.section_);
+    }
+});
+
+videojs.registerComponent('IvPill', IvPill);
+
+var IvPills = videojs.extend(Component, {
+    constructor: function (p, opts) {
+        Component.call(this, p, opts);
+
+        this.rate_ = this.addChild('IvPill', { section: 'speed', text: 'Playback Rate' });
+        this.quality_ = this.addChild('IvPill', { section: 'quality', text: 'Quality' });
+        this.captions_ = this.addChild('IvPill', {
+            section: 'captions',
+            icon: 'captions',
+            text: 'Subtitles',
+            onClick: function () { toggle_captions(); }
+        });
+        this.more_ = this.addChild('IvPill', { section: null, icon: 'settings', text: 'Settings' });
+
+        this.refresh();
+
+        var self = this;
+        var refresh = function () { self.refresh(); };
+
+        // Il selettore di qualità nasce dopo di noi (lo aggiunge la pagina o il
+        // plugin): alla prima passata la pillola non trova ancora niente da
+        // dire, quindi si riallinea appena il lettore è pronto.
+        p.ready(refresh);
+        this.on(p, ['ratechange', 'texttrackchange', 'loadedmetadata', 'playing'], refresh);
+        p.textTracks().addEventListener('addtrack', refresh);
+        p.textTracks().addEventListener('change', refresh);
+    },
+
+    createEl: function () {
+        return videojs.dom.createEl('div', { className: 'iv-pills' });
+    },
+
+    /** Riallinea le etichette allo stato vero del lettore. */
+    refresh: function () {
+        var p = this.player();
+
+        var rate = p.playbackRate();
+        this.rate_.setLabel((Math.round(rate * 100) / 100) + '×', rate !== 1);
+
+        var quality = iv_read_menu(p.el(), IV_SECTIONS[0].selectors);
+        var chosen = null;
+        for (var i = 0; i < quality.length; i++) {
+            if (quality[i].selected) chosen = quality[i];
+        }
+
+        if (quality.length) {
+            this.quality_.show();
+            this.quality_.setLabel(chosen ? chosen.label : '—', false);
+        } else {
+            this.quality_.hide();
+        }
+
+        // Invidious non mette il codice lingua sulle tracce, solo il nome:
+        // «Italiano» diventa «ITA», che in una pillola ci sta.
+        var track = iv_showing_caption(p);
+        var code = '';
+        if (track) {
+            code = track.language
+                ? track.language.slice(0, 2).toUpperCase()
+                : (track.label || '').slice(0, 3).toUpperCase();
+        }
+        this.captions_.setLabel(code, !!track);
+    }
+});
+
+videojs.registerComponent('IvPills', IvPills);
+
+/* --- Il pannello ------------------------------------------------------- */
+
+var IvPanel = videojs.extend(Component, {
+    constructor: function (p, opts) {
+        Component.call(this, p, opts);
+
+        var self = this;
+
+        this.outside_ = function (event) {
+            if (!self.hasClass('iv-panel-open')) return;
+            if (self.el().contains(event.target)) return;
+            if (event.target.closest && event.target.closest('.iv-pill')) return;
+            self.close();
+        };
+
+        this.escape_ = function (event) {
+            if (event.key === 'Escape' && self.hasClass('iv-panel-open')) self.close();
+        };
+
+        this.on(p, ['fullscreenchange', 'ended'], function () { self.close(); });
+    },
+
+    createEl: function () {
+        return videojs.dom.createEl('div', { className: 'iv-panel' }, {
+            role: 'menu',
+            tabindex: '-1'
+        });
+    },
+
+    /**
+     * Ricostruisce il contenuto leggendo i menù originali.
+     *
+     * Il pannello ha due livelli, come il pannello di un telefono: l'indice
+     * dice cosa è impostato adesso (qualità, velocità, sottotitoli, traccia),
+     * e si scende dentro una voce sola per cambiarla. Rovesciare in faccia
+     * tutte le venti opzioni insieme era esattamente il difetto delle quattro
+     * tendine di prima.
+     *
+     * @param {String|null} section Sezione da aprire; null per l'indice
+     */
+    render: function (section) {
+        this.section_ = section || null;
+        this.el().innerHTML = '';
+
+        if (this.section_) this.renderSection_(this.section_);
+        else this.renderIndex_();
+    },
+
+    /** Disegna l'indice: una riga per impostazione, col valore attuale. */
+    renderIndex_: function () {
+        var self = this;
+        var p = this.player();
+        var shown = 0;
+
+        IV_SECTIONS.forEach(function (spec) {
+            var items = iv_read_menu(p.el(), spec.selectors);
+            var choosable = items.filter(iv_is_choice);
+            if (!choosable.length) return;
+
+            var chosen = null;
+            choosable.forEach(function (item) { if (item.selected) chosen = item; });
+
+            // I sottotitoli spenti si chiamano «captions off» nel menù di
+            // video.js: come valore di una riga che dice già «Sottotitoli»,
+            // basta «Off».
+            var value = chosen ? chosen.label : '—';
+            if (spec.id === 'captions') {
+                var track = iv_showing_caption(p);
+                value = track ? (track.label || track.language || p.localize('On')) : p.localize('Off');
+            }
+
+            var row = self.row_(p.localize(spec.title), value, 'chevron');
+            row.addEventListener('click', function () { self.render(spec.id); });
+            self.el().appendChild(row);
+            shown++;
+        });
+
+        if (!shown) {
+            self.el().appendChild(videojs.dom.createEl('div', {
+                className: 'iv-panel-title',
+                textContent: p.localize('No content')
+            }));
+        }
+    },
+
+    /**
+     * Disegna una sezione sola: intestazione con il ritorno, poi le voci.
+     *
+     * @param {String} section
+     */
+    renderSection_: function (section) {
+        var self = this;
+        var p = this.player();
+
+        var spec = null;
+        IV_SECTIONS.forEach(function (candidate) { if (candidate.id === section) spec = candidate; });
+        if (!spec) return this.render(null);
+
+        var items = iv_read_menu(p.el(), spec.selectors);
+        if (!items.length) return this.render(null);
+
+        var head = videojs.dom.createEl('button', { className: 'iv-panel-item iv-panel-head' }, { type: 'button' });
+        head.insertAdjacentHTML('beforeend', IV_ICONS.chevronBack);
+        var title = document.createElement('span');
+        title.textContent = p.localize(spec.title);
+        head.appendChild(title);
+        head.addEventListener('click', function () { self.render(null); });
+        this.el().appendChild(head);
+        this.el().appendChild(videojs.dom.createEl('div', { className: 'iv-panel-sep' }));
+
+        // Le impostazioni dei sottotitoli (corpo, sfondo) sono un'altra cosa
+        // rispetto alla scelta della lingua: vanno in fondo, dopo una riga.
+        var choices = items.filter(iv_is_choice);
+        var extras = items.filter(function (item) { return !iv_is_choice(item); });
+
+        choices.forEach(function (item) {
+            var row = self.row_(item.label, '', 'check');
+            row.setAttribute('role', 'menuitemradio');
+            row.setAttribute('aria-checked', item.selected ? 'true' : 'false');
+            row.addEventListener('click', function () { self.choose_(item); });
+            self.el().appendChild(row);
+        });
+
+        extras.forEach(function (item) {
+            self.el().appendChild(videojs.dom.createEl('div', { className: 'iv-panel-sep' }));
+            var row = self.row_(item.label, '', null);
+            row.addEventListener('click', function () { self.choose_(item); });
+            self.el().appendChild(row);
+        });
+    },
+
+    /**
+     * Una riga del pannello.
+     *
+     * @param {String} label Testo a sinistra
+     * @param {String} value Valore a destra
+     * @param {String|null} icon Icona di coda
+     * @returns {Element}
+     */
+    row_: function (label, value, icon) {
+        var row = videojs.dom.createEl('button', { className: 'iv-panel-item' }, {
+            type: 'button',
+            role: 'menuitem'
+        });
+
+        var text = document.createElement('span');
+        text.textContent = label;
+        row.appendChild(text);
+
+        if (value) {
+            var val = document.createElement('span');
+            val.className = 'iv-panel-value';
+            val.textContent = value;
+            row.appendChild(val);
+        }
+
+        if (icon) row.insertAdjacentHTML('beforeend', IV_ICONS[icon]);
+        return row;
+    },
+
+    /**
+     * Sceglie una voce cliccando dentro il menù originale, che sa cosa fare.
+     *
+     * @param {Object} item Voce restituita da iv_read_menu
+     */
+    choose_: function (item) {
+        var p = this.player();
+
+        item.el.click();
+
+        // Il cambio di qualità o di traccia non è istantaneo: si rilegge lo
+        // stato dopo, non subito.
+        p.setTimeout(function () {
+            var pills = p.getChild('controlBar').getChild('IvPills');
+            if (pills) pills.refresh();
+        }, 120);
+
+        this.close();
+    },
+
+    /** @param {String|null} section */
+    open: function (section) {
+        this.render(section || null);
+        this.addClass('iv-panel-open');
+        document.addEventListener('click', this.outside_, true);
+        document.addEventListener('keydown', this.escape_);
+    },
+
+    close: function () {
+        this.removeClass('iv-panel-open');
+        document.removeEventListener('click', this.outside_, true);
+        document.removeEventListener('keydown', this.escape_);
+    },
+
+    /** @param {String|null} section */
+    toggle: function (section) {
+        var open = this.hasClass('iv-panel-open');
+        var same = this.section_ === section;
+        this.section_ = section;
+
+        if (open && same) return this.close();
+        if (open) return this.render(section || null);
+        this.open(section);
+    }
+});
+
+videojs.registerComponent('IvPanel', IvPanel);
+
+/* --- Riscontro a schermo ----------------------------------------------- */
+
+var iv_toast_timer = null;
+
+/**
+ * Mostra per un attimo cosa è appena cambiato (volume, salto, velocità).
+ * Senza questo, sul telefono un doppio tocco non dà nessun segno di essere
+ * stato capito.
+ *
+ * @param {String} text
+ */
+function iv_toast(text) {
+    if (typeof player === 'undefined' || !player.el()) return;
+
+    var el = player.el().querySelector('.iv-toast');
+    if (!el) {
+        el = videojs.dom.createEl('div', { className: 'iv-toast' }, { 'aria-live': 'polite' });
+        player.el().appendChild(el);
+    }
+
+    el.textContent = text;
+    el.classList.add('iv-toast-on');
+
+    if (iv_toast_timer) clearTimeout(iv_toast_timer);
+    iv_toast_timer = setTimeout(function () { el.classList.remove('iv-toast-on'); }, 900);
+}
+
+// Il selettore di qualità dei flussi progressivi esiste solo quando la pagina
+// ha caricato il suo script (cioè quando non siamo in DASH): chiederlo alla
+// cieca farebbe fallire la costruzione della barra.
+if (videojs.getComponent('QualitySelector')) {
+    options.controlBar.children.push('qualitySelector');
+}
+
+// I comandi della diretta si aggiungono solo a una diretta: video.js li
+// nasconderebbe da solo, ma tenerli fuori quando non servono è più onesto che
+// affidarsi a una classe che qualcuno potrebbe sovrascrivere.
+if (video_data.live_now) {
+    var iv_spacer_at = options.controlBar.children.indexOf('Spacer');
+    options.controlBar.children.splice(iv_spacer_at, 0, 'liveDisplay', 'seekToLive');
+}
+
 var player = videojs('player', options);
+
+/* --- Montaggio dell'interfaccia ---------------------------------------- */
+
+// Il pannello è figlio del lettore, non della barra: deve galleggiare sopra
+// l'immagine sia quando la barra sta sotto (plancia) sia quando ci sta sopra
+// (schermo intero, incorporamento).
+player.addChild('IvPanel');
+
+/** Ridisegna le icone dei comandi in base allo stato del lettore. */
+function iv_paint_icons() {
+    var root = player.el();
+    if (!root) return;
+
+    var volume_icon = 'volume';
+    if (player.muted() || player.volume() === 0) volume_icon = 'mute';
+    else if (player.volume() < 0.5) volume_icon = 'volumeLow';
+
+    iv_set_icon(root, '.vjs-big-play-button', 'play');
+    iv_set_icon(root, '.vjs-play-control', player.ended() ? 'replay' : (player.paused() ? 'play' : 'pause'));
+    iv_set_icon(root, '.vjs-mute-control', volume_icon);
+    iv_set_icon(root, '.vjs-fullscreen-control', player.isFullscreen() ? 'exitFullscreen' : 'enterFullscreen');
+    iv_set_icon(root, '.vjs-share-control', 'share');
+}
+
+player.ready(iv_paint_icons);
+player.on(['play', 'pause', 'ended', 'playing', 'loadstart', 'volumechange', 'fullscreenchange'], iv_paint_icons);
+
+// I plugin appendono i loro pulsanti quando sono pronti loro, non quando lo
+// siamo noi: si ridipinge anche dopo il primo fotogramma.
+player.one('playing', function () { player.setTimeout(iv_paint_icons, 0); });
+
+// Lo spazio sotto il riquadro dev'essere alto quanto la plancia: se la barra
+// va a capo su uno schermo stretto, il titolo si sposta invece di finirci
+// sotto. Quando la barra torna sopra l'immagine (schermo intero, telefono in
+// orizzontale) non si riserva niente.
+(function () {
+    var shell = document.getElementById('player-container');
+    var bar = player.getChild('controlBar');
+    if (!shell || !bar) return;
+
+    function sync_dock_height() {
+        if (player.isFullscreen()) {
+            shell.style.setProperty('--dock-h', '0px');
+            return;
+        }
+
+        var bar_box = bar.el().getBoundingClientRect();
+        var shell_box = shell.getBoundingClientRect();
+        var docked = bar_box.height > 0 && bar_box.top >= shell_box.bottom - 4;
+
+        shell.style.setProperty('--dock-h', docked ? Math.round(bar_box.height) + 'px' : '0px');
+    }
+
+    player.ready(sync_dock_height);
+    player.on(['fullscreenchange', 'playerresize', 'loadedmetadata'], sync_dock_height);
+    addEventListener('resize', sync_dock_height);
+    addEventListener('orientationchange', sync_dock_height);
+
+    if (window.ResizeObserver) new ResizeObserver(sync_dock_height).observe(bar.el());
+})();
+
+// Il riscontro a schermo parte solo dopo il primo avvio: il volume e la
+// velocità vengono impostati dalle preferenze appena il lettore nasce, e non
+// c'è niente da annunciare per una cosa che l'utente non ha fatto.
+var iv_feedback_ready = false;
+player.one('play', function () { iv_feedback_ready = true; });
+
+player.on('volumechange', function () {
+    if (!iv_feedback_ready) return;
+
+    if (player.muted() || player.volume() === 0) iv_toast(player.localize('Mute'));
+    else iv_toast(player.localize('Volume') + ' ' + Math.round(player.volume() * 100) + '%');
+});
 
 player.on('error', function () {
     if (video_data.params.quality === 'dash') return;
@@ -219,44 +826,25 @@ function isMobile() {
   catch(e){ return false; }
 }
 
+/**
+ * Opzioni dello strato di gesti su tocco.
+ *
+ * Prima, su telefono, qualità e sottotitoli venivano staccati dalla barra e
+ * appiccicati in un angolo sopra l'immagine, con i menù che si aprivano fuori
+ * schermo. Adesso non serve più: la barra sta sotto il video e ci sta tutta,
+ * quindi al plugin resta solo il suo mestiere, cioè i gesti e la rotazione.
+ *
+ * @returns {Object} opzioni per videojs-mobile-ui
+ */
+function iv_mobile_ui_options() {
+    return {
+        fullscreen: { enterOnRotate: true, exitOnRotate: true, lockOnRotate: true },
+        touchControls: { seekSeconds: 5 * player.playbackRate() }
+    };
+}
+
 if (isMobile()) {
-    player.mobileUi({ touchControls: { seekSeconds: 5 * player.playbackRate() } });
-
-    var buttons = ['playToggle', 'volumePanel', 'captionsButton'];
-
-    if (!video_data.params.listen && video_data.params.quality === 'dash') buttons.push('audioTrackButton');
-    if (video_data.params.listen || video_data.params.quality !== 'dash') buttons.push('qualitySelector');
-
-    // Create new control bar object for operation buttons
-    const ControlBar = videojs.getComponent('controlBar');
-    let operations_bar = new ControlBar(player, {
-      children: [],
-      playbackRates: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-    });
-    buttons.slice(1).forEach(function (child) {operations_bar.addChild(child);});
-
-    // Remove operation buttons from primary control bar
-    var primary_control_bar = player.getChild('controlBar');
-    buttons.forEach(function (child) {primary_control_bar.removeChild(child);});
-
-    var operations_bar_element = operations_bar.el();
-    operations_bar_element.classList.add('mobile-operations-bar');
-    player.addChild(operations_bar);
-
-    // Playback menu doesn't work when it's initialized outside of the primary control bar
-    var playback_element = document.getElementsByClassName('vjs-playback-rate')[0];
-    operations_bar_element.append(playback_element);
-
-    // The share and http source selector element can't be fetched till the players ready.
-    player.one('playing', function () {
-        var share_element = document.getElementsByClassName('vjs-share-control')[0];
-        operations_bar_element.append(share_element);
-
-        if (!video_data.params.listen && video_data.params.quality === 'dash') {
-            var http_source_selector = document.getElementsByClassName('vjs-http-source-selector vjs-menu-button')[0];
-            operations_bar_element.append(http_source_selector);
-        }
-    });
+    player.mobileUi(iv_mobile_ui_options());
 }
 
 // Enable VR video support
@@ -353,8 +941,9 @@ function updateCookie(newVolume, newSpeed) {
 player.on('ratechange', function () {
     updateCookie(null, player.playbackRate());
     if (isMobile()) {
-        player.mobileUi({ touchControls: { seekSeconds: 5 * player.playbackRate() } });
+        player.mobileUi(iv_mobile_ui_options());
     }
+    if (iv_feedback_ready) iv_toast((Math.round(player.playbackRate() * 100) / 100) + '\u00d7');
 });
 
 player.on('volumechange', function () {
@@ -833,7 +1422,6 @@ if (navigator.vendor === 'Apple Computer, Inc.' && !video_data.params.listen && 
 
 // Watch on Invidious link
 if (location.pathname.startsWith('/embed/')) {
-    const Button = videojs.getComponent('Button');
     let watch_on_invidious_button = new Button(player);
 
     // Create hyperlink for current instance
