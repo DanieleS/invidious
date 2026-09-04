@@ -631,12 +631,17 @@ var IvPanel = videojs.extend(Component, {
     open: function (section) {
         this.render(section || null);
         this.addClass('iv-panel-open');
+        // La classe va anche sul player, non solo sul pannello: è da lì che il
+        // CSS tiene in piedi la barra dei comandi finché il pannello resta
+        // aperto. Vedi player.css.
+        this.player().addClass('iv-panel-open');
         document.addEventListener('click', this.outside_, true);
         document.addEventListener('keydown', this.escape_);
     },
 
     close: function () {
         this.removeClass('iv-panel-open');
+        this.player().removeClass('iv-panel-open');
         document.removeEventListener('click', this.outside_, true);
         document.removeEventListener('keydown', this.escape_);
     },
