@@ -184,7 +184,24 @@
    3. La plancia: la barra esce dall'immagine
    ========================================================================== */
 
+/*
+ * I colori dei comandi non si riscrivono uno per uno: si ridichiarano le
+ * variabili sulla barra, e tutto quello che ci sta dentro li eredita. La
+ * plancia è parte della pagina, quindi segue il tema; il pannello e il
+ * riscontro restano fuori dalla barra e quindi restano scuri, perché quelli
+ * stanno sopra l'immagine.
+ *
+ * Il vantaggio si vede in fondo al file: per far tornare la barra sovrapposta
+ * col telefono in orizzontale bastano sei variabili, non dieci regole.
+ */
 .player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar {
+  --ctl-fg: var(--text);
+  --ctl-fg-dim: var(--text-2);
+  --ctl-hover: var(--surface-hi);
+  --ctl-track: var(--line);
+  --ctl-buffer: var(--surface-hi);
+  --panel-line: var(--line);
+
   position: absolute;
   top: 100%;
   bottom: auto;
@@ -198,7 +215,6 @@
   border: 1px solid var(--line);
   border-top: 0;
   border-radius: 0 0 var(--r-panel) var(--r-panel);
-  color: var(--text);
   padding: 6px var(--dock-pad) 10px;
   gap: 4px;
 }
@@ -213,33 +229,10 @@
   transition: none;
 }
 
-/* Colori della plancia: è parte della pagina, quindi segue il tema. */
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar .vjs-button,
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar .vjs-time-control {
-  color: var(--text);
-}
-
+/* L'unica cosa che la plancia si tiene per sé: col mouse sopra, il comando si
+   accende del rosso del sito invece di limitarsi a schiarire. */
 .player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar .vjs-button:hover {
-  background: var(--surface-hi);
   color: var(--accent-text);
-}
-
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-progress-holder {
-  background: var(--line);
-}
-
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-load-progress,
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-load-progress div {
-  background: var(--surface-hi);
-}
-
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-time-control {
-  color: var(--text-2);
-}
-
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-current-time {
-  color: var(--text);
-  font-weight: 600;
 }
 
 /* ==========================================================================
@@ -468,14 +461,6 @@
   display: none;
 }
 
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-volume-bar {
-  background: var(--line);
-}
-
-.player-shell .video-js:not(.vjs-fullscreen) .vjs-volume-level {
-  background: var(--text-2);
-}
-
 /* Orario */
 .video-js .vjs-time-control {
   display: flex;
@@ -488,6 +473,10 @@
   line-height: var(--ctl);
   height: var(--ctl);
   color: var(--ctl-fg);
+}
+
+.video-js .vjs-current-time {
+  font-weight: 600;
 }
 
 .video-js .vjs-time-divider {
@@ -557,7 +546,11 @@
   display: none;
 }
 
-.video-js .iv-pill {
+/* Il selettore comincia dalla barra perché la regola generale dei pulsanti,
+   che è più specifica di `.video-js .iv-pill`, altrimenti riporterebbe le
+   pillole al testo pieno: qui il tono più basso è voluto, l'etichetta accesa è
+   solo quella attiva. */
+.video-js .vjs-control-bar .iv-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -578,13 +571,13 @@
   transition: border-color 0.14s var(--ease), color 0.14s var(--ease), background 0.14s var(--ease);
 }
 
-.video-js .iv-pill:hover {
+.video-js .vjs-control-bar .iv-pill:hover {
   border-color: var(--accent);
   color: var(--accent-text);
   background: var(--accent-soft);
 }
 
-.video-js .iv-pill.iv-pill-on {
+.video-js .vjs-control-bar .iv-pill.iv-pill-on {
   border-color: var(--accent);
   color: var(--accent-text);
   background: var(--accent-soft);
@@ -608,18 +601,6 @@
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
-}
-
-.player-shell .video-js:not(.vjs-fullscreen) .iv-pill {
-  border-color: var(--line);
-  color: var(--text-2);
-}
-
-.player-shell .video-js:not(.vjs-fullscreen) .iv-pill:hover,
-.player-shell .video-js:not(.vjs-fullscreen) .iv-pill.iv-pill-on {
-  border-color: var(--accent);
-  color: var(--accent-text);
-  background: var(--accent-soft);
 }
 
 /* Il pannello: uno solo, al posto di quattro tendine. Sta sempre sopra
@@ -780,6 +761,23 @@
   transform: translateX(-50%) translateY(0);
 }
 
+/* I gesti: il verso verticale resta al browser finché attorno al video c'è una
+   pagina da scorrere, e diventa nostro (volume, luminosità) solo a schermo
+   intero. `pan-y` è esattamente questa frase scritta in CSS. */
+.video-js.iv-gestures {
+  touch-action: pan-y;
+}
+
+.video-js.iv-gestures.vjs-fullscreen {
+  touch-action: none;
+}
+
+/* Il filtro si accende solo quando serve davvero: lasciarlo sempre attivo
+   toglierebbe al video la strada veloce di decodifica su certi telefoni. */
+.video-js.iv-dimmed .vjs-tech {
+  filter: brightness(var(--iv-brightness, 1));
+}
+
 /* ==========================================================================
    8. Schermo intero e orizzontale
    ========================================================================== */
@@ -829,13 +827,32 @@
 }
 
 /* Telefono in orizzontale: la pagina attorno non esiste più, quindi la
-   plancia non ha senso — i comandi tornano sull'immagine. */
+   plancia non ha senso — i comandi tornano sull'immagine.
+
+   Il `:not(.vjs-fullscreen)` non è decorativo: la regola della plancia lo ha,
+   e un `:not()` vale un punto di specificità. Senza, qui sotto si scriverebbe
+   una regola più debole di quella che si vuole annullare, e in orizzontale la
+   barra resterebbe appesa sotto il video. */
 @media (orientation: landscape) and (max-height: 480px) {
+  /* Il video si prende più altezza del solito, ma non tutta: sopra c'è la
+     testata del sito, e un lettore che finisce sotto il bordo dello schermo
+     costringe a scorrere per arrivare ai comandi. */
+  .player-shell {
+    width: min(100%, calc(80vh * var(--ar)));
+  }
+
   .player-shell .video-js:not(.vjs-fullscreen) .iv-panel {
     --panel-bottom: 76px;
   }
 
-  .player-shell .video-js .vjs-control-bar {
+  .player-shell .video-js:not(.vjs-fullscreen) .vjs-control-bar {
+    --ctl-fg: var(--on-media);
+    --ctl-fg-dim: var(--on-media-2);
+    --ctl-hover: rgba(255, 255, 255, 0.14);
+    --ctl-track: rgba(255, 255, 255, 0.26);
+    --ctl-buffer: rgba(255, 255, 255, 0.44);
+    --panel-line: rgba(255, 255, 255, 0.12);
+
     position: absolute;
     top: auto;
     bottom: 0;
@@ -844,7 +861,6 @@
     background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.45) 55%, transparent);
     border: 0;
     border-radius: 0;
-    color: var(--on-media);
     padding: 28px var(--dock-pad) 8px;
   }
 }

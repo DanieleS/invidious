@@ -566,7 +566,7 @@ var iv_toast_timer = null;
  *
  * @param {String} text
  */
-function iv_toast(text) {
+function iv_toast(text, sticky) {
     if (typeof player === 'undefined' || !player.el()) return;
 
     var el = player.el().querySelector('.iv-toast');
@@ -579,7 +579,18 @@ function iv_toast(text) {
     el.classList.add('iv-toast-on');
 
     if (iv_toast_timer) clearTimeout(iv_toast_timer);
-    iv_toast_timer = setTimeout(function () { el.classList.remove('iv-toast-on'); }, 900);
+    if (!sticky) iv_toast_timer = setTimeout(function () { el.classList.remove('iv-toast-on'); }, 900);
+}
+
+/** Chiude il riscontro rimasto aperto per la durata di un gesto. */
+function iv_toast_release() {
+    if (typeof player === 'undefined' || !player.el()) return;
+
+    var el = player.el().querySelector('.iv-toast');
+    if (!el) return;
+
+    if (iv_toast_timer) clearTimeout(iv_toast_timer);
+    iv_toast_timer = setTimeout(function () { el.classList.remove('iv-toast-on'); }, 600);
 }
 
 // Il selettore di qualità dei flussi progressivi esiste solo quando la pagina
@@ -845,6 +856,200 @@ function iv_mobile_ui_options() {
 
 if (isMobile()) {
     player.mobileUi(iv_mobile_ui_options());
+}
+
+/* ==========================================================================
+ * I gesti sul video
+ *
+ * `videojs-mobile-ui` porta già il doppio tocco per saltare e la rotazione che
+ * manda a schermo intero, ma solo su Android e iOS veri e senza modo di
+ * spegnerne una parte. Qui si aggiunge quello che non fa, con lo stesso
+ * riscontro a schermo del resto del lettore:
+ *
+ *   - tocco lungo   → doppia velocità finché tieni premuto
+ *   - trascinamento orizzontale → cerca, con l'orario di arrivo in vista
+ *   - trascinamento verticale   → volume a destra, luminosità a sinistra
+ *
+ * Il verticale vale solo quando attorno al video non c'è pagina da scorrere,
+ * cioè a schermo intero o col telefono in orizzontale. In verticale, sulla
+ * pagina di visione, scorrere col dito sul video deve continuare a scorrere la
+ * pagina: rubare quel gesto per il volume è il modo più veloce per far
+ * arrabbiare qualcuno. Chi decide non è questo file ma il CSS, con
+ * `touch-action`: `pan-y` lascia il verticale al browser, `none` lo prende.
+ *
+ * In modalità VR il trascinamento serve a girare la testa, quindi lì i gesti
+ * non si installano affatto.
+ * ========================================================================== */
+
+if (isMobile() && !(video_data.vr && video_data.params.vr_mode)) {
+    (function () {
+        var root = player.el();
+
+        var LONG_PRESS_MS = 450;   // oltre questo, tenere premuto è un comando
+        var THRESHOLD = 14;        // px di movimento prima di decidere il verso
+        var SWIPE_RANGE = 1.4;     // quanta altezza serve per l'intera scala
+
+        var gesture = null;
+        var brightness = 1;
+
+        /**
+         * @param {EventTarget} target
+         * @returns {Boolean} vero se il tocco è su un comando, non sul video
+         */
+        function on_controls(target) {
+            if (!target || !target.closest) return false;
+            return !!target.closest('.vjs-control-bar, .iv-panel, .vjs-menu, .vjs-modal-dialog');
+        }
+
+        /**
+         * Il verticale è nostro solo dove non c'è pagina da scorrere.
+         *
+         * @returns {Boolean}
+         */
+        function owns_vertical() {
+            return player.isFullscreen() ||
+                window.matchMedia('(orientation: landscape) and (max-height: 480px)').matches;
+        }
+
+        /**
+         * Quanto video copre un trascinamento da un bordo all'altro: due minuti,
+         * o l'intero video se dura meno. Su un video di tre ore un rapporto
+         * fisso renderebbe impossibile spostarsi di dieci secondi.
+         *
+         * @returns {Number} secondi
+         */
+        function seek_span() {
+            var duration = player.duration();
+            if (!duration || !isFinite(duration)) return 120;
+            return Math.min(duration, 120);
+        }
+
+        /** @param {Number} value Luminosità, 1 = quella vera */
+        function set_brightness(value) {
+            brightness = value;
+            root.style.setProperty('--iv-brightness', value.toFixed(2));
+            root.classList.toggle('iv-dimmed', Math.abs(value - 1) > 0.01);
+        }
+
+        function start_long_press() {
+            if (!gesture || gesture.mode) return;
+
+            gesture.mode = 'rate';
+            player.playbackRate(2);
+            iv_toast('2×', true);
+        }
+
+        root.addEventListener('pointerdown', function (e) {
+            if (e.pointerType !== 'touch' || !e.isPrimary) return;
+            if (on_controls(e.target)) return;
+
+            gesture = {
+                x: e.clientX,
+                y: e.clientY,
+                mode: null,
+                time: player.currentTime(),
+                volume: player.volume(),
+                brightness: brightness,
+                rate: player.playbackRate(),
+                timer: setTimeout(start_long_press, LONG_PRESS_MS)
+            };
+        });
+
+        root.addEventListener('pointermove', function (e) {
+            if (!gesture || e.pointerType !== 'touch') return;
+
+            var dx = e.clientX - gesture.x;
+            var dy = e.clientY - gesture.y;
+
+            // Finché non si è deciso cosa sia, un movimento qualsiasi basta a
+            // escludere il tocco lungo: tenere premuto vuol dire stare fermi.
+            if (Math.abs(dx) > 4 || Math.abs(dy) > 4) clearTimeout(gesture.timer);
+
+            if (gesture.mode === 'rate') return;
+
+            var box = root.getBoundingClientRect();
+
+            if (!gesture.mode) {
+                if (Math.abs(dx) < THRESHOLD && Math.abs(dy) < THRESHOLD) return;
+
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    gesture.mode = 'seek';
+                } else if (owns_vertical()) {
+                    gesture.mode = (gesture.x - box.left) > box.width / 2 ? 'volume' : 'brightness';
+                } else {
+                    // Il verticale è della pagina: ci togliamo di mezzo.
+                    gesture.mode = 'scroll';
+                }
+            }
+
+            if (gesture.mode === 'scroll') return;
+
+            if (gesture.mode === 'seek') {
+                var duration = player.duration() || 0;
+                var delta = (dx / box.width) * seek_span();
+                var target = helpers.clamp(gesture.time + delta, 0, duration || Infinity);
+
+                gesture.target = target;
+
+                var sign = delta >= 0 ? '+' : '−';
+                iv_toast(videojs.formatTime(target, duration) +
+                    '  ' + sign + Math.abs(Math.round(delta)) + ' s', true);
+                return;
+            }
+
+            var shift = -(dy / box.height) * SWIPE_RANGE;
+
+            if (gesture.mode === 'volume') {
+                var volume = helpers.clamp(gesture.volume + shift, 0, 1);
+                player.muted(false);
+                player.volume(volume);
+                iv_toast(player.localize('Volume') + ' ' + Math.round(volume * 100) + '%', true);
+            } else {
+                var value = helpers.clamp(gesture.brightness + shift, 0.25, 1.5);
+                set_brightness(value);
+                iv_toast(player.localize('Brightness') + ' ' + Math.round(value * 100) + '%', true);
+            }
+        });
+
+        function finish() {
+            if (!gesture) return;
+
+            clearTimeout(gesture.timer);
+
+            if (gesture.mode === 'rate') {
+                player.playbackRate(gesture.rate);
+                iv_toast_release();
+            } else if (gesture.mode === 'seek' && gesture.target !== undefined) {
+                player.currentTime(gesture.target);
+                iv_toast_release();
+            } else if (gesture.mode === 'volume' || gesture.mode === 'brightness') {
+                iv_toast_release();
+            }
+
+            gesture = null;
+        }
+
+        root.addEventListener('pointerup', finish);
+        root.addEventListener('pointercancel', finish);
+
+        // La luminosità è una correzione per il buio, non una preferenza: se
+        // cambia video torna com'era.
+        player.on('loadstart', function () { set_brightness(1); });
+
+        // E torna com'era anche quando si esce da dove il gesto esiste: un
+        // video rimasto scuro dentro la pagina, senza nessun comando visibile
+        // per rischiararlo, è una trappola.
+        function restore_brightness() {
+            if (!owns_vertical()) set_brightness(1);
+        }
+
+        player.on('fullscreenchange', restore_brightness);
+        addEventListener('orientationchange', function () {
+            setTimeout(restore_brightness, 120);
+        });
+
+        root.classList.add('iv-gestures');
+    })();
 }
 
 // Enable VR video support
