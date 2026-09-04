@@ -325,6 +325,15 @@ var IvPills = videojs.extend(Component, {
         // dire, quindi si riallinea appena il lettore è pronto.
         p.ready(refresh);
         this.on(p, ['ratechange', 'texttrackchange', 'loadedmetadata', 'playing'], refresh);
+
+        // In DASH le qualità compaiono man mano che il flusso viene letto, e
+        // il menù che le elenca si rifà da capo ogni volta: senza questi due
+        // avvisi la pillola resterebbe ferma a quello che sapeva all'inizio.
+        if (typeof p.qualityLevels === 'function') {
+            var levels = p.qualityLevels();
+            levels.on('addqualitylevel', refresh);
+            levels.on('change', refresh);
+        }
         p.textTracks().addEventListener('addtrack', refresh);
         p.textTracks().addEventListener('change', refresh);
     },
@@ -347,8 +356,11 @@ var IvPills = videojs.extend(Component, {
         }
 
         if (quality.length) {
+            // Con i flussi adattivi può non esserci ancora niente di scelto:
+            // la prima voce del menù è «Auto», che è esattamente la verità in
+            // quel momento. Meglio di un trattino.
             this.quality_.show();
-            this.quality_.setLabel(chosen ? chosen.label : '—', false);
+            this.quality_.setLabel(chosen ? chosen.label : quality[0].label, false);
         } else {
             this.quality_.hide();
         }

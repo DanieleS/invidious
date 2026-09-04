@@ -115,6 +115,27 @@
   transition: background 0.16s var(--ease), transform 0.16s var(--ease);
 }
 
+/*
+ * E qui si rimette la logica con cui video.js lo fa sparire.
+ *
+ * Le sue regole (`.vjs-has-started .vjs-big-play-button { display: none }`)
+ * hanno la stessa specificità della nostra qui sopra, ma stanno in un foglio
+ * caricato prima: il `display: flex` che serve a centrare il triangolo le
+ * batteva per posizione, e il pulsante restava piantato in mezzo al video
+ * anche durante la riproduzione. Stessa forma delle regole di video.js, col
+ * nostro valore di `display`.
+ */
+.video-js.vjs-controls-disabled .vjs-big-play-button,
+.video-js.vjs-has-started .vjs-big-play-button,
+.video-js.vjs-using-native-controls .vjs-big-play-button,
+.video-js.vjs-error .vjs-big-play-button {
+  display: none;
+}
+
+.video-js.vjs-has-started.vjs-paused.vjs-show-big-play-button-on-pause .vjs-big-play-button {
+  display: flex;
+}
+
 .video-js:hover .vjs-big-play-button,
 .video-js .vjs-big-play-button:focus {
   background: var(--accent);
