@@ -488,19 +488,39 @@
   height: var(--ctl);
 }
 
-.video-js .vjs-volume-control.vjs-volume-horizontal {
+/*
+ * La barra del volume che si apre di fianco al pulsante.
+ *
+ * Due cose da sapere, tutte e due imparate sbagliando:
+ *
+ *   1. `align-items: center`. La barretta è alta 4 px dentro un contenitore
+ *      alto 44: senza allineamento resta incollata in cima, cioè si apre
+ *      sopra la fila dei comandi invece che di fianco al pulsante. In video.js
+ *      a centrarla erano i margini, che qui sono stati tolti.
+ *   2. Lo stato aperto non è `:hover`. video.js ci mette una classe sua,
+ *      `.vjs-hover`, con un selettore lungo quanto il nostro — a pari
+ *      specificità vinceva il suo, e la barra restava della misura di serie.
+ *      Qui si elencano tutti e tre gli stati e si parte da `.vjs-control-bar`,
+ *      che è un gradino sopra.
+ */
+.video-js .vjs-control-bar .vjs-volume-panel .vjs-volume-control.vjs-volume-horizontal {
+  display: flex;
+  align-items: center;
   width: 0;
   height: var(--ctl);
   transition: width 0.18s var(--ease);
 }
 
-.video-js .vjs-volume-panel:hover .vjs-volume-control.vjs-volume-horizontal,
-.video-js .vjs-volume-panel:focus-within .vjs-volume-control.vjs-volume-horizontal {
+.video-js .vjs-control-bar .vjs-volume-panel.vjs-hover .vjs-volume-control.vjs-volume-horizontal,
+.video-js .vjs-control-bar .vjs-volume-panel:hover .vjs-volume-control.vjs-volume-horizontal,
+.video-js .vjs-control-bar .vjs-volume-panel:focus-within .vjs-volume-control.vjs-volume-horizontal {
   width: 72px;
+  height: var(--ctl);
   margin-right: 6px;
 }
 
-.video-js .vjs-volume-bar {
+.video-js .vjs-control-bar .vjs-volume-bar {
+  width: 100%;
   margin: 0;
   background: var(--ctl-track);
   border-radius: 999px;
