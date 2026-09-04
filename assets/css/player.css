@@ -171,6 +171,7 @@
 .video-js .vjs-duration { order: 7; }
 .video-js .vjs-remaining-time { order: 8; }
 .video-js .vjs-live-control { order: 9; }
+.video-js .vjs-seek-to-live-control { order: 10; }
 .video-js .vjs-spacer { order: 20; flex: 1 1 auto; }
 .video-js .iv-pills { order: 30; }
 .video-js .vjs-share-control { order: 40; }
@@ -473,9 +474,18 @@
   display: none;
 }
 
-/* Orario */
-.video-js .vjs-time-control {
+/* Orario.
+
+   Il `display` sta in una regola sua, con il `:not(.vjs-live)`: in diretta
+   video.js nasconde l'orario perché la durata è infinita, e la sua regola
+   (`.vjs-live .vjs-time-control`) ha la stessa specificità della nostra ma
+   arriva prima nel foglio. Scriverlo qui dentro significherebbe rimettere a
+   schermo un «12:34 / -:-:-». */
+.video-js:not(.vjs-live) .vjs-time-control {
   display: flex;
+}
+
+.video-js .vjs-time-control {
   align-items: center;
   width: auto;
   min-width: 0;
@@ -529,14 +539,20 @@
   font-weight: 600;
 }
 
+/* Il pallino della diretta. video.js lo disegna col suo carattere di icone,
+   che noi spegniamo per usare SVG veri: qui però basta un cerchio, e un
+   cerchio si fa col bordo tondo. Acceso quando si è sul vivo, spento quando si
+   sta guardando indietro. */
 .video-js .vjs-seek-to-live-control .vjs-icon-placeholder {
-  color: var(--text-3);
-  margin-right: 5px;
+  width: 8px;
+  height: 8px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--ctl-fg-dim);
 }
 
-.video-js .vjs-live-edge .vjs-icon-placeholder,
 .video-js .vjs-seek-to-live-control.vjs-at-live-edge .vjs-icon-placeholder {
-  color: var(--accent);
+  background: var(--accent);
 }
 
 /* ==========================================================================

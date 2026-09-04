@@ -16,6 +16,13 @@ var options = {
         // audio, qualità, velocità) restano qui dentro ma il CSS li nasconde:
         // servono solo come motore del pannello unico, che è `ivPills` +
         // `IvPanel`.
+        //
+        // I due comandi della diretta ci sono sempre, come nella barra di
+        // serie: si nascondono da soli quando il video non è una diretta, e
+        // decidere qui in base a `video_data.live_now` li toglierebbe
+        // all'incorporamento, che quel dato non lo emette. Servono tutti e
+        // due: `seekToLive` quando video.js riesce a dare una diretta
+        // scorrevole, `liveDisplay` come ripiego quando non ci riesce.
         children: [
             'progressControl',
             'playToggle',
@@ -25,6 +32,8 @@ var options = {
             'currentTimeDisplay',
             'timeDivider',
             'durationDisplay',
+            'liveDisplay',
+            'seekToLive',
             'Spacer',
             'captionsButton',
             'audioTrackButton',
@@ -608,13 +617,6 @@ if (videojs.getComponent('QualitySelector')) {
     options.controlBar.children.push('qualitySelector');
 }
 
-// I comandi della diretta si aggiungono solo a una diretta: video.js li
-// nasconderebbe da solo, ma tenerli fuori quando non servono è più onesto che
-// affidarsi a una classe che qualcuno potrebbe sovrascrivere.
-if (video_data.live_now) {
-    var iv_spacer_at = options.controlBar.children.indexOf('Spacer');
-    options.controlBar.children.splice(iv_spacer_at, 0, 'liveDisplay', 'seekToLive');
-}
 
 var player = videojs('player', options);
 
