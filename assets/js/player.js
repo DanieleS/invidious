@@ -137,17 +137,29 @@ var IV_ICONS = {
  */
 function iv_set_icon(root, selector, icon) {
     if (!root) return;
-    var host = root.querySelector(selector);
-    if (!host) return;
-    var slot = host.querySelector('.vjs-icon-placeholder');
-    if (!slot) {
-        slot = document.createElement('span');
-        slot.className = 'vjs-icon-placeholder';
-        host.insertBefore(slot, host.firstChild);
+
+    // Tutti quelli che combaciano, non il primo: su tocco `videojs-mobile-ui`
+    // aggiunge un secondo pulsante di riproduzione dentro il suo strato dei
+    // gesti, e nel DOM sta prima di quello della barra. Con `querySelector` si
+    // dipingeva solo quello del plugin, e il pulsante della barra restava
+    // fermo sul triangolo per tutto il video — ma solo sul telefono.
+    var hosts = root.querySelectorAll(selector);
+
+    for (var i = 0; i < hosts.length; i++) {
+        var host = hosts[i];
+        var slot = host.querySelector('.vjs-icon-placeholder');
+
+        if (!slot) {
+            slot = document.createElement('span');
+            slot.className = 'vjs-icon-placeholder';
+            host.insertBefore(slot, host.firstChild);
+        }
+
+        if (slot.getAttribute('data-iv-icon') === icon) continue;
+
+        slot.setAttribute('data-iv-icon', icon);
+        slot.innerHTML = IV_ICONS[icon] || '';
     }
-    if (slot.getAttribute('data-iv-icon') === icon) return;
-    slot.setAttribute('data-iv-icon', icon);
-    slot.innerHTML = IV_ICONS[icon] || '';
 }
 
 /**
