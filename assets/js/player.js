@@ -947,6 +947,100 @@ function iv_toast_release() {
     iv_toast_timer = setTimeout(function () { el.classList.remove('iv-toast-on'); }, 600);
 }
 
+/* --- Scala del volume --------------------------------------------------- */
+
+/*
+ * `player.volume()` non è il volume: è di quanto viene moltiplicata l'ampiezza
+ * dell'onda. Le due cose non coincidono, perché l'orecchio conta in decibel. A
+ * metà corsa l'onda si dimezza, ma il suono cala di 6 dB e se ne sente ancora
+ * grosso modo due terzi; per sentirne la metà bisogna scendere a 0,32, per un
+ * quarto a 0,10. Da qui la manopola che tutti conoscono: succede tutto nel
+ * primo decimo, e dal 40 al 100 non cambia quasi niente.
+ *
+ * La posizione della manopola diventa quindi un numero diverso dal
+ * moltiplicatore: `pos` è quello che si sceglie e si legge, `gain` è quello che
+ * va al lettore, e `gain = pos^1,67`.
+ *
+ * L'esponente non è scelto a occhio. La legge di Stevens dice che il volume
+ * percepito cresce come l'ampiezza elevata a 0,6; per fare il contrario — una
+ * corsa in cui è il percepito ad andare dritto — serve l'ampiezza elevata
+ * all'inverso, cioè 1/0,6. Il conto torna con la regola dei -10 dB: a metà
+ * corsa restano -10 dB, che è esattamente metà del volume percepito.
+ *
+ * Tutto quello che sta sopra al lettore — manopola, tasti, rotellina, gesti,
+ * riscontro a schermo, preferenza salvata — parla in `pos`. `player.volume()` è
+ * l'unico che parla in `gain`, e ci si passa solo da queste funzioni.
+ */
+var IV_VOLUME_CURVE = 1.67;
+
+/**
+ * Dalla posizione della manopola al moltiplicatore del lettore.
+ *
+ * @param {number} pos 0-1
+ * @returns {number} 0-1
+ */
+function iv_volume_gain(pos) {
+    return Math.pow(helpers.clamp(pos, 0, 1), IV_VOLUME_CURVE);
+}
+
+/**
+ * Posizione attuale della manopola.
+ *
+ * @returns {number} 0-1
+ */
+function iv_volume() {
+    return Math.pow(helpers.clamp(player.volume(), 0, 1), 1 / IV_VOLUME_CURVE);
+}
+
+/**
+ * Sposta la manopola, e con lei il volume del lettore.
+ *
+ * @param {number} pos 0-1
+ */
+function iv_set_volume(pos) {
+    player.volume(iv_volume_gain(pos));
+}
+
+/** @returns {number} La posizione della manopola in percentuale, come si scrive a schermo e si salva. */
+function iv_volume_percent() {
+    return Math.round(iv_volume() * 100);
+}
+
+// La manopola di video.js legge e scrive `player.volume()` senza passare da
+// nessun'altra parte: la curva va messa nei suoi punti di contatto.
+//
+// `calculateDistance` è il solo posto da cui la barra ricava un volume da un
+// clic o da un trascinamento — il cartellino con la percentuale si chiede la
+// posizione del puntatore per conto suo, e quindi mostra già la posizione. È
+// anche il punto che regge un aggiornamento di video.js: la riga che lo usa
+// (`player.volume(this.calculateDistance(event))`) è la stessa dalla 7 alla 8.
+(function () {
+    var bar = videojs.getComponent('VolumeBar').prototype;
+    var distance = bar.calculateDistance;
+
+    bar.calculateDistance = function (event) {
+        return iv_volume_gain(distance.call(this, event));
+    };
+
+    bar.getPercent = function () {
+        return this.player_.muted() ? 0 : iv_volume();
+    };
+
+    bar.stepForward = function () {
+        this.checkMuted();
+        iv_set_volume(iv_volume() + 0.1);
+    };
+
+    bar.stepBack = function () {
+        this.checkMuted();
+        iv_set_volume(iv_volume() - 0.1);
+    };
+
+    bar.volumeAsPercentage_ = function () {
+        return iv_volume_percent();
+    };
+}());
+
 // Il selettore di qualità dei flussi progressivi esiste solo quando la pagina
 // ha caricato il suo script (cioè quando non siamo in DASH): chiederlo alla
 // cieca farebbe fallire la costruzione della barra.
@@ -971,7 +1065,7 @@ function iv_paint_icons() {
 
     var volume_icon = 'volume';
     if (player.muted() || player.volume() === 0) volume_icon = 'mute';
-    else if (player.volume() < 0.5) volume_icon = 'volumeLow';
+    else if (iv_volume() < 0.5) volume_icon = 'volumeLow';
 
     iv_set_icon(root, '.vjs-big-play-button', 'play');
     iv_set_icon(root, '.vjs-play-control', player.ended() ? 'replay' : (player.paused() ? 'play' : 'pause'));
@@ -1050,7 +1144,7 @@ player.on('volumechange', function () {
     if (!iv_feedback_ready) return;
 
     if (player.muted() || player.volume() === 0) iv_toast(player.localize('Mute'));
-    else iv_toast(player.localize('Volume') + ' ' + Math.round(player.volume() * 100) + '%');
+    else iv_toast(player.localize('Volume') + ' ' + iv_volume_percent() + '%');
 });
 
 player.on('error', function () {
@@ -1318,7 +1412,7 @@ if (isMobile() && !(video_data.vr && video_data.params.vr_mode)) {
                 y: e.clientY,
                 mode: null,
                 time: player.currentTime(),
-                volume: player.volume(),
+                volume: iv_volume(),
                 brightness: brightness,
                 rate: player.playbackRate(),
                 timer: setTimeout(start_long_press, LONG_PRESS_MS)
@@ -1372,7 +1466,7 @@ if (isMobile() && !(video_data.vr && video_data.params.vr_mode)) {
             if (gesture.mode === 'volume') {
                 var volume = helpers.clamp(gesture.volume + shift, 0, 1);
                 player.muted(false);
-                player.volume(volume);
+                iv_set_volume(volume);
                 iv_toast(player.localize('Volume') + ' ' + Math.round(volume * 100) + '%', true);
             } else {
                 var value = helpers.clamp(gesture.brightness + shift, 0.25, 1.5);
@@ -1454,7 +1548,7 @@ if (video_data.params.video_start > 0 || video_data.params.video_end > 0) {
     player.currentTime(video_data.params.video_start);
 }
 
-player.volume(video_data.params.volume / 100);
+iv_set_volume(video_data.params.volume / 100);
 player.playbackRate(video_data.params.speed);
 
 /*
@@ -1472,12 +1566,16 @@ player.playbackRate(video_data.params.speed);
  * Si aspetta un secondo di quiete prima di salvare: trascinando la manopola il
  * volume cambia venti volte, e venti scritture per una manopola sola sono
  * diciannove di troppo.
+ *
+ * Il numero salvato è la posizione della manopola, non il moltiplicatore
+ * dell'ampiezza: è quello che si vede qui e nella pagina delle impostazioni.
+ * Vedi «Scala del volume».
  */
 var iv_volume_stored = video_data.params.volume;
 var iv_volume_timer = null;
 
 player.on('volumechange', function () {
-    var value = Math.round(player.volume() * 100);
+    var value = iv_volume_percent();
     if (value === iv_volume_stored) return;
 
     if (iv_volume_timer) clearTimeout(iv_volume_timer);
@@ -1691,10 +1789,7 @@ if (!video_data.params.listen && video_data.params.annotations) {
 }
 
 function change_volume(delta) {
-    const curVolume = player.volume();
-    let newVolume = curVolume + delta;
-    newVolume = helpers.clamp(newVolume, 0, 1);
-    player.volume(newVolume);
+    iv_set_volume(iv_volume() + delta);
 }
 
 function toggle_muted() {
