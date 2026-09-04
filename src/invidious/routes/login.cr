@@ -173,7 +173,12 @@ module Invidious::Routes::Login
 
     referer = get_referer(env, "/feed/subscriptions")
 
-    return env.redirect referer if env.get? "user"
+    # Deliberately no "already signed in, go back where you came from"
+    # shortcut here, unlike `login_page`. A browser holding a session cookie
+    # that is *not* valid site-wide would be bounced away from the one endpoint
+    # able to give it a good one, with nothing said about why — and starting a
+    # flow is idempotent anyway: the provider still has its session and hands
+    # back the same account.
 
     if !CONFIG.login_enabled
       return error_template(400, "Login has been disabled by administrator.")
@@ -182,6 +187,20 @@ module Invidious::Routes::Login
     if !Invidious::OIDC.enabled?
       return error_template(404, "Single sign-on has not been configured.")
     end
+
+    # A session cookie scoped to "/oidc" is a leftover from the defect fixed in
+    # #6: it reaches these endpoints and nowhere else, so Invidious sees a
+    # signed-in visitor here while every other page sees an anonymous one. Left
+    # alone it puts such a browser in a loop between /login and /oidc/login.
+    # Clearing it is one header, and it heals itself on the next attempt.
+    env.response.cookies << HTTP::Cookie.new(
+      name: "SID",
+      value: "",
+      path: "/oidc",
+      expires: Time.utc(1990, 1, 1),
+      http_only: true,
+      samesite: HTTP::Cookie::SameSite::Lax
+    )
 
     state = Base64.urlsafe_encode(Random::Secure.random_bytes(32), padding: false)
     nonce = Base64.urlsafe_encode(Random::Secure.random_bytes(32), padding: false)
