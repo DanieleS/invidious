@@ -9,11 +9,11 @@ module Invidious::Frontend::Pagination
     if I18n.locale_is_rtl?(locale)
       # Inverted arrow ("first" points to the right)
       str << I18n.translate(locale, "First page")
-        str << %(<svg class="icon icon--sm"><use href="#i-chev-r"/></svg>)
+      str << %(<svg class="icon icon--sm"><use href="#i-chev-r"/></svg>)
     else
       # Regular arrow ("first" points to the left)
       str << %(<svg class="icon icon--sm"><use href="#i-chev-l"/></svg>)
-        str << I18n.translate(locale, "First page")
+      str << I18n.translate(locale, "First page")
     end
 
     str << "</a>"
@@ -26,11 +26,11 @@ module Invidious::Frontend::Pagination
     if I18n.locale_is_rtl?(locale)
       # Inverted arrow ("previous" points to the right)
       str << I18n.translate(locale, "Previous page")
-        str << %(<svg class="icon icon--sm"><use href="#i-chev-r"/></svg>)
+      str << %(<svg class="icon icon--sm"><use href="#i-chev-r"/></svg>)
     else
       # Regular arrow ("previous" points to the left)
       str << %(<svg class="icon icon--sm"><use href="#i-chev-l"/></svg>)
-        str << I18n.translate(locale, "Previous page")
+      str << I18n.translate(locale, "Previous page")
     end
 
     str << "</a>"
@@ -43,11 +43,11 @@ module Invidious::Frontend::Pagination
     if I18n.locale_is_rtl?(locale)
       # Inverted arrow ("next" points to the left)
       str << %(<svg class="icon icon--sm"><use href="#i-chev-l"/></svg>)
-        str << I18n.translate(locale, "Next page")
+      str << I18n.translate(locale, "Next page")
     else
       # Regular arrow ("next" points to the right)
       str << I18n.translate(locale, "Next page")
-        str << %(<svg class="icon icon--sm"><use href="#i-chev-r"/></svg>)
+      str << %(<svg class="icon icon--sm"><use href="#i-chev-r"/></svg>)
     end
 
     str << "</a>"

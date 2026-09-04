@@ -193,15 +193,20 @@ class PrivateInstanceHandler < Kemal::Handler
     "/feed/private", "/feed/playlist/", "/feed/webhook/",
   }
 
-  PUBLIC_PATHS = {
-    "/favicon.ico", "/robots.txt", "/site.webmanifest", "/manifest.json", "/opensearch.xml",
+  # The layout also pulls a handful of files straight from the root of
+  # `assets/`: the icons, the web manifest, the search description, robots.txt.
+  # Matched by extension rather than listed one by one, so that a redesign
+  # adding an icon does not have to remember to come back here. No route that
+  # serves content ends in any of these.
+  PUBLIC_SUFFIXES = {
+    ".css", ".js", ".ico", ".png", ".svg", ".webmanifest", ".xml", ".txt", ".woff", ".woff2",
   }
 
   def call(env)
     return call_next env if !CONFIG.private_instance
 
     path = env.request.path
-    return call_next env if PUBLIC_PATHS.includes?(path)
+    return call_next env if PUBLIC_SUFFIXES.any? { |suffix| path.ends_with?(suffix) }
     return call_next env if PUBLIC_PREFIXES.any? { |prefix| path.starts_with?(prefix) }
     return call_next env if authenticated?(env)
 
