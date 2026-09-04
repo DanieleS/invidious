@@ -1454,8 +1454,39 @@ if (video_data.params.video_start > 0 || video_data.params.video_end > 0) {
     player.currentTime(video_data.params.video_start);
 }
 
+/*
+ * Volume e velocità di partenza.
+ *
+ * Il valore che arriva dal server è quello delle preferenze; sopra ci va
+ * l'ultimo che è stato scelto qui dentro, se c'è. Serve perché a chi ha un
+ * account il server manda sempre le preferenze dell'account (in
+ * `before_all.cr` un utente riconosciuto sostituisce il cookie), quindi la
+ * manopola del volume tornava al valore salvato a ogni video: il lettore
+ * scriveva in un cookie che nessuno rileggeva più.
+ *
+ * Il volume è una cosa del momento e del posto in cui stai ascoltando, non una
+ * preferenza da portarsi dietro fra dispositivi: sta bene nella memoria del
+ * browser.
+ */
+var IV_VOLUME_KEY = 'player_volume';
+
 player.volume(video_data.params.volume / 100);
 player.playbackRate(video_data.params.speed);
+
+(function () {
+    var saved = helpers.storage.get(IV_VOLUME_KEY);
+    if (!saved || typeof saved.volume !== 'number') return;
+
+    player.volume(helpers.clamp(saved.volume, 0, 1));
+    player.muted(!!saved.muted);
+})();
+
+player.on('volumechange', function () {
+    helpers.storage.set(IV_VOLUME_KEY, {
+        volume: player.volume(),
+        muted: player.muted()
+    });
+});
 
 /**
  * Method for getting the contents of a cookie
