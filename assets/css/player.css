@@ -499,7 +499,17 @@
 
 /* Volume: la barra si apre al passaggio, ma resta larga abbastanza da poterla
    prendere. Su tocco sparisce del tutto (c'è il volume di sistema). */
-.video-js .vjs-volume-panel {
+/* La larghezza del contenitore la decide il contenuto, in tutti gli stati.
+   Quando è aperto video.js gli impone 10em: cento pixel, dentro cui il
+   pulsante (44) più la barra (72) non ci stanno, e quello che avanza esce dal
+   contenitore e finisce sopra l'orario. Gli stati sono i suoi: `.vjs-hover`,
+   `:active`, `.vjs-slider-active`. */
+.video-js .vjs-control-bar .vjs-volume-panel,
+.video-js .vjs-control-bar .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-hover,
+.video-js .vjs-control-bar .vjs-volume-panel.vjs-volume-panel-horizontal:hover,
+.video-js .vjs-control-bar .vjs-volume-panel.vjs-volume-panel-horizontal:active,
+.video-js .vjs-control-bar .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-slider-active,
+.video-js .vjs-control-bar .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-mute-toggle-only {
   width: auto;
 }
 
