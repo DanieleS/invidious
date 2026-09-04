@@ -52,6 +52,18 @@
    1. La superficie del video
    ========================================================================== */
 
+/*
+ * video.js tiene il rapporto d'aspetto alla vecchia maniera: si scrive da solo
+ * una regola con `padding-top: 56.25%`, che era il modo di fare un riquadro
+ * proporzionato prima che esistesse `aspect-ratio`. A noi il riquadro lo dà
+ * già il contenitore, e quel padding fa danni appena l'altezza non è imposta:
+ * nel lettore ridotto rimetterebbe il video alto seicento pixel dentro una
+ * cornice da centottanta.
+ */
+.player-dimensions.vjs-fluid {
+  padding-top: 0;
+}
+
 .video-js .vjs-tech {
   object-fit: contain;
 }
@@ -555,6 +567,39 @@
   background: var(--accent);
 }
 
+/* Il capitolo in corso, accanto all'orario. È un pulsante: ci si clicca sopra
+   e si apre l'elenco. Sotto una certa larghezza sparisce — il titolo di un
+   capitolo è lungo, e in due righe di comandi non ci sta. */
+.video-js .iv-chapter {
+  order: 11;
+  width: auto !important;
+  max-width: 30%;
+  height: var(--ctl-sm) !important;
+  padding: 0 8px;
+  gap: 6px;
+  color: var(--ctl-fg-dim);
+  font-size: var(--t-xs);
+}
+
+.video-js .iv-chapter svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.video-js .iv-chapter-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .video-js .iv-chapter {
+    display: none !important;
+  }
+}
+
 /* ==========================================================================
    6. Pillole e pannello impostazioni
    ========================================================================== */
@@ -739,6 +784,15 @@
   font-size: var(--t-xs);
 }
 
+/* Nell'indice il valore è la risposta alla riga («Qualità → 1080p») e va
+   acceso; dentro una sezione è solo l'ora d'inizio di un capitolo, e dodici
+   orari accesi in colonna sono un semaforo. */
+.video-js .iv-panel-item[role='menuitemradio'] .iv-panel-value {
+  color: var(--on-media-2);
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
 /* L'intestazione della sezione: il ritorno all'indice. */
 .video-js .iv-panel-head {
   color: var(--on-media-2);
@@ -816,6 +870,130 @@
 
 .video-js.vjs-fullscreen .vjs-tech {
   border-radius: 0;
+}
+
+/* ==========================================================================
+   8b. Il lettore ridotto
+   ========================================================================== */
+
+/*
+ * Scorrendo oltre il lettore, il video si stacca e si rimpicciolisce in un
+ * angolo. A muoversi è `.video-js`, non il riquadro: il riquadro resta dov'era,
+ * vuoto, a tenere il posto. Se si togliesse anche quello, la pagina salterebbe
+ * sotto le dita di chi sta scorrendo.
+ */
+.player-shell.iv-mini .video-js {
+  position: fixed;
+  inset: auto var(--s-4) var(--s-4) auto;
+  /* Gli `!important` non sono pigrizia: il tag <video> in
+     `components/player.ecr` porta `style="width:100%"` scritto a mano, e
+     video.js ricopia quello stile sul div che costruisce. Contro uno stile in
+     riga non esiste selettore che tenga. */
+  width: clamp(220px, 30vw, 360px) !important;
+  height: auto !important;
+  aspect-ratio: var(--ar);
+  z-index: 30;
+  border-radius: var(--r-media);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.45);
+}
+
+.player-shell.iv-mini .video-js .vjs-tech,
+.player-shell.iv-mini .video-js .vjs-poster {
+  border-radius: var(--r-media);
+}
+
+/* Nel riquadro piccolo i comandi tornano sopra l'immagine: sotto non c'è più
+   niente a cui appoggiarli. */
+.player-shell.iv-mini .video-js:not(.vjs-fullscreen) .vjs-control-bar {
+  --ctl-fg: var(--on-media);
+  --ctl-fg-dim: var(--on-media-2);
+  --ctl-hover: rgba(255, 255, 255, 0.14);
+  --ctl-track: rgba(255, 255, 255, 0.26);
+  --ctl-buffer: rgba(255, 255, 255, 0.44);
+  --panel-line: rgba(255, 255, 255, 0.12);
+
+  position: absolute;
+  top: auto;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.4) 60%, transparent);
+  border: 0;
+  border-radius: 0;
+  padding: 20px 4px 2px;
+  gap: 0;
+}
+
+/* Ci sta solo l'essenziale: fermare, saltare, e la barra per capire a che
+   punto si è. Tutto il resto si trova risalendo al lettore vero. */
+.player-shell.iv-mini .vjs-volume-panel,
+.player-shell.iv-mini .vjs-time-control,
+.player-shell.iv-mini .iv-pills,
+.player-shell.iv-mini .iv-chapter,
+.player-shell.iv-mini .vjs-share-control,
+.player-shell.iv-mini .vjs-big-play-button {
+  display: none !important;
+}
+
+.player-shell.iv-mini .video-js .vjs-control-bar .vjs-button {
+  width: 34px;
+  height: 34px;
+}
+
+.player-shell.iv-mini .video-js .vjs-control-bar .vjs-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.player-shell.iv-mini .video-js {
+  --rail-hit: 14px;
+  --rail-h: 4px;
+}
+
+/* Tornare su, oppure chiudere. Stanno in alto perché in basso c'è la barra. */
+.iv-mini-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 8;
+  display: none;
+  gap: 4px;
+}
+
+.player-shell.iv-mini .iv-mini-actions {
+  display: flex;
+}
+
+.iv-mini-button {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-ctrl);
+  background: var(--chip-bg);
+  color: var(--on-media);
+  cursor: pointer;
+  transition: background 0.14s var(--ease);
+}
+
+.iv-mini-button:hover {
+  background: var(--accent);
+  color: var(--accent-on);
+}
+
+.iv-mini-button:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+}
+
+.iv-mini-button svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ==========================================================================

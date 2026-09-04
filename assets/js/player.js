@@ -32,6 +32,7 @@ var options = {
             'currentTimeDisplay',
             'timeDivider',
             'durationDisplay',
+            'ivChapterDisplay',
             'liveDisplay',
             'seekToLive',
             'Spacer',
@@ -120,7 +121,10 @@ var IV_ICONS = {
     exitFullscreen: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M9 4.5V9H4.5M19.5 9H15V4.5M15 19.5V15h4.5M4.5 15H9v4.5"/></svg>',
     check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M4.5 12.5l5 5 10-11"/></svg>',
     chevron: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M9.5 5l7 7-7 7"/></svg>',
-    chevronBack: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M14.5 5l-7 7 7 7"/></svg>'
+    chevronBack: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M14.5 5l-7 7 7 7"/></svg>',
+    chapters: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M4 6h16M4 12h10M4 18h16"/></svg>',
+    close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
+    up: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="iv-icon-stroke" d="M12 19.5V5M6 11l6-6 6 6"/></svg>'
 };
 
 /**
@@ -418,6 +422,22 @@ var IvPanel = videojs.extend(Component, {
         var p = this.player();
         var shown = 0;
 
+        // I capitoli stanno in cima perché non sono un'impostazione: sono un
+        // modo di muoversi dentro il video, cioè la cosa che si cerca più
+        // spesso.
+        if (IV_CHAPTERS.length) {
+            var here = iv_chapter_at(p.currentTime());
+            var chapters_row = self.row_(
+                p.localize('Chapters'),
+                here >= 0 ? IV_CHAPTERS[here].title : '',
+                'chevron'
+            );
+
+            chapters_row.addEventListener('click', function () { self.render('chapters'); });
+            self.el().appendChild(chapters_row);
+            shown++;
+        }
+
         IV_SECTIONS.forEach(function (spec) {
             var items = iv_read_menu(p.el(), spec.selectors);
             var choosable = items.filter(iv_is_choice);
@@ -458,6 +478,8 @@ var IvPanel = videojs.extend(Component, {
         var self = this;
         var p = this.player();
 
+        if (section === 'chapters') return this.renderChapters_();
+
         var spec = null;
         IV_SECTIONS.forEach(function (candidate) { if (candidate.id === section) spec = candidate; });
         if (!spec) return this.render(null);
@@ -465,13 +487,7 @@ var IvPanel = videojs.extend(Component, {
         var items = iv_read_menu(p.el(), spec.selectors);
         if (!items.length) return this.render(null);
 
-        var head = videojs.dom.createEl('button', { className: 'iv-panel-item iv-panel-head' }, { type: 'button' });
-        head.insertAdjacentHTML('beforeend', IV_ICONS.chevronBack);
-        var title = document.createElement('span');
-        title.textContent = p.localize(spec.title);
-        head.appendChild(title);
-        head.addEventListener('click', function () { self.render(null); });
-        this.el().appendChild(head);
+        this.el().appendChild(this.head_(p.localize(spec.title)));
         this.el().appendChild(videojs.dom.createEl('div', { className: 'iv-panel-sep' }));
 
         // Le impostazioni dei sottotitoli (corpo, sfondo) sono un'altra cosa
@@ -493,6 +509,49 @@ var IvPanel = videojs.extend(Component, {
             row.addEventListener('click', function () { self.choose_(item); });
             self.el().appendChild(row);
         });
+    },
+
+    /** L'elenco dei capitoli, con l'ora d'inizio di ciascuno. */
+    renderChapters_: function () {
+        var self = this;
+        var p = this.player();
+        var here = iv_chapter_at(p.currentTime());
+
+        this.el().appendChild(this.head_(p.localize('Chapters')));
+
+        IV_CHAPTERS.forEach(function (chapter, index) {
+            var row = self.row_(chapter.title, videojs.formatTime(chapter.time), 'check');
+
+            row.setAttribute('role', 'menuitemradio');
+            row.setAttribute('aria-checked', index === here ? 'true' : 'false');
+
+            row.addEventListener('click', function () {
+                p.currentTime(chapter.time);
+                self.close();
+            });
+
+            self.el().appendChild(row);
+        });
+    },
+
+    /**
+     * L'intestazione di una sezione: il ritorno all'indice.
+     *
+     * @param {String} title
+     * @returns {Element}
+     */
+    head_: function (title) {
+        var self = this;
+
+        var head = videojs.dom.createEl('button', { className: 'iv-panel-item iv-panel-head' }, { type: 'button' });
+        head.insertAdjacentHTML('beforeend', IV_ICONS.chevronBack);
+
+        var text = document.createElement('span');
+        text.textContent = title;
+        head.appendChild(text);
+
+        head.addEventListener('click', function () { self.render(null); });
+        return head;
     },
 
     /**
@@ -571,6 +630,231 @@ var IvPanel = videojs.extend(Component, {
 });
 
 videojs.registerComponent('IvPanel', IvPanel);
+
+/* ==========================================================================
+ * I capitoli
+ *
+ * YouTube non ce li dà in un campo suo: stanno scritti nella descrizione come
+ * marcatori temporali, e Invidious li ha già trasformati in collegamenti con
+ * l'ora dentro (`data-jump-time`). Quindi i capitoli si leggono dalla pagina,
+ * senza chiedere niente al server.
+ *
+ * Si accettano solo se somigliano davvero a un indice: almeno due, in ordine,
+ * il primo all'inizio del video e l'ultimo prima della fine. Senza questa
+ * prudenza, un «guarda al 5:32» buttato in mezzo alla descrizione diventerebbe
+ * un capitolo, e la barra si riempirebbe di tagli a caso.
+ * ========================================================================== */
+
+var IV_CHAPTERS = [];
+
+/**
+ * @returns {Array<{time: Number, title: String}>}
+ */
+function iv_read_chapters() {
+    var wrapper = document.getElementById('descriptionWrapper');
+    if (!wrapper) return [];
+
+    var found = [];
+    var lines = wrapper.innerHTML.split(/<br\s*\/?>/i);
+
+    lines.forEach(function (line) {
+        var holder = document.createElement('div');
+        holder.innerHTML = line;
+
+        var link = holder.querySelector('a[data-jump-time]');
+        if (!link) return;
+
+        var time = parseInt(link.getAttribute('data-jump-time'), 10);
+        if (isNaN(time)) return;
+
+        // Il titolo è la riga meno il marcatore, ripulita dai trattini e dai
+        // due punti che la gente ci mette in mezzo.
+        link.parentNode.removeChild(link);
+        var title = holder.textContent
+            .replace(/\s+/g, ' ')
+            .replace(/^[\s\-–—:·|)\]]+/, '')
+            .replace(/[\s\-–—:·|(\[]+$/, '')
+            .trim();
+
+        if (title) found.push({ time: time, title: title });
+    });
+
+    if (found.length < 2) return [];
+    if (found[0].time > 5) return [];
+
+    for (var i = 1; i < found.length; i++) {
+        if (found[i].time <= found[i - 1].time) return [];
+    }
+
+    return found;
+}
+
+/**
+ * @param {Number} time Secondi
+ * @returns {Number} indice del capitolo, -1 se non ce ne sono
+ */
+function iv_chapter_at(time) {
+    var index = -1;
+    for (var i = 0; i < IV_CHAPTERS.length; i++) {
+        if (IV_CHAPTERS[i].time <= time + 0.25) index = i;
+    }
+    return index;
+}
+
+/**
+ * Disegna i tagli fra un capitolo e l'altro sulla barra di scorrimento.
+ *
+ * I tagli sono veri buchi, non trattini colorati: una maschera che toglie tre
+ * pixel di barra a ogni confine. Un trattino andrebbe dipinto del colore di
+ * quello che sta dietro, e dietro c'è la plancia in un caso e il video
+ * nell'altro — un colore solo non può andare bene in tutti e due.
+ */
+function iv_paint_chapter_marks() {
+    var holder = player.el().querySelector('.vjs-progress-holder');
+    if (!holder) return;
+
+    var duration = player.duration();
+
+    if (!IV_CHAPTERS.length || !duration || !isFinite(duration)) {
+        holder.style.webkitMaskImage = '';
+        holder.style.maskImage = '';
+        return;
+    }
+
+    var stops = [];
+
+    IV_CHAPTERS.forEach(function (chapter, i) {
+        if (i === 0) return;
+
+        var at = (chapter.time / duration * 100).toFixed(3) + '%';
+        stops.push('#000 calc(' + at + ' - 1.5px)');
+        stops.push('transparent calc(' + at + ' - 1.5px)');
+        stops.push('transparent calc(' + at + ' + 1.5px)');
+        stops.push('#000 calc(' + at + ' + 1.5px)');
+    });
+
+    var mask = 'linear-gradient(to right, ' + stops.join(', ') + ')';
+    holder.style.webkitMaskImage = mask;
+    holder.style.maskImage = mask;
+}
+
+/** Il nome del capitolo in corso, nella plancia. */
+var IvChapterDisplay = videojs.extend(Button, {
+    constructor: function (p, opts) {
+        Button.call(this, p, opts);
+
+        this.controlText(p.localize('Chapters'));
+        this.el().querySelector('.vjs-icon-placeholder').innerHTML = IV_ICONS.chapters;
+
+        this.name_ = document.createElement('span');
+        this.name_.className = 'iv-chapter-name';
+        this.el().appendChild(this.name_);
+
+        this.shown_ = -2;
+        this.hide();
+
+        var self = this;
+        this.on(p, ['timeupdate', 'seeked', 'loadedmetadata'], function () { self.update(); });
+    },
+
+    buildCSSClass: function () {
+        return 'vjs-control vjs-button iv-chapter';
+    },
+
+    update: function () {
+        if (!IV_CHAPTERS.length) {
+            this.hide();
+            return;
+        }
+
+        var index = iv_chapter_at(this.player().currentTime());
+        if (index === this.shown_) return;
+
+        this.shown_ = index;
+        this.name_.textContent = index >= 0 ? IV_CHAPTERS[index].title : '';
+        if (index >= 0) this.show(); else this.hide();
+    },
+
+    handleClick: function () {
+        var panel = this.player().getChild('IvPanel');
+        if (panel) panel.toggle('chapters');
+    }
+});
+
+videojs.registerComponent('IvChapterDisplay', IvChapterDisplay);
+
+/* ==========================================================================
+ * Il lettore ridotto
+ *
+ * Quando il lettore esce dallo schermo mentre si scorre, il video si stacca e
+ * si rimpicciolisce in un angolo. Il riquadro grande resta dov'era, vuoto: se
+ * si togliesse anche quello la pagina salterebbe sotto le dita.
+ * ========================================================================== */
+
+function iv_setup_mini_player() {
+    var shell = document.getElementById('player-container');
+
+    // In modalità solo audio non c'è niente da guardare, e senza
+    // IntersectionObserver non c'è modo di sapere quando il lettore esce.
+    if (!shell || video_data.params.listen || !window.IntersectionObserver) return;
+
+    var dismissed = false;
+
+    var actions = videojs.dom.createEl('div', { className: 'iv-mini-actions' });
+
+    var back = videojs.dom.createEl('button', {
+        className: 'iv-mini-button',
+        innerHTML: IV_ICONS.up
+    }, { type: 'button', title: player.localize('Back to the video') });
+
+    var close = videojs.dom.createEl('button', {
+        className: 'iv-mini-button',
+        innerHTML: IV_ICONS.close
+    }, { type: 'button', title: player.localize('Close') });
+
+    back.addEventListener('click', function () {
+        shell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    close.addEventListener('click', function () {
+        dismissed = true;
+        shell.classList.remove('iv-mini');
+    });
+
+    actions.appendChild(back);
+    actions.appendChild(close);
+    player.el().appendChild(actions);
+
+    /** @param {Boolean} on */
+    function set_mini(on) {
+        if (on === shell.classList.contains('iv-mini')) return;
+        shell.classList.toggle('iv-mini', on);
+    }
+
+    function allowed() {
+        return !dismissed && player.hasStarted() && !player.ended() && !player.isFullscreen();
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            // Solo scorrendo oltre il lettore, non arrivandoci da sotto.
+            var scrolled_past = entry.boundingClientRect.top < 0;
+
+            if (entry.isIntersecting) {
+                dismissed = false;
+                set_mini(false);
+            } else {
+                set_mini(scrolled_past && allowed());
+            }
+        });
+    }, { threshold: 0 });
+
+    observer.observe(shell);
+
+    player.on(['ended', 'fullscreenchange'], function () {
+        if (!allowed()) set_mini(false);
+    });
+}
 
 /* --- Riscontro a schermo ----------------------------------------------- */
 
@@ -665,6 +949,11 @@ player.one('playing', function () { player.setTimeout(iv_paint_icons, 0); });
             return;
         }
 
+        // Col lettore ridotto la barra è dentro il riquadrino in un angolo:
+        // misurarla lì vorrebbe dire cambiare lo spazio riservato nella pagina
+        // mentre qualcuno sta scorrendo, e vedersi saltare il testo sotto.
+        if (shell.classList.contains('iv-mini')) return;
+
         var bar_box = bar.el().getBoundingClientRect();
         var shell_box = shell.getBoundingClientRect();
         var docked = bar_box.height > 0 && bar_box.top >= shell_box.bottom - 4;
@@ -679,6 +968,23 @@ player.one('playing', function () { player.setTimeout(iv_paint_icons, 0); });
 
     if (window.ResizeObserver) new ResizeObserver(sync_dock_height).observe(bar.el());
 })();
+
+// Capitoli e lettore ridotto hanno bisogno della pagina intera: la descrizione
+// da cui si leggono i capitoli sta sotto al lettore, e quando questo script
+// gira non è ancora stata disegnata.
+addEventListener('DOMContentLoaded', function () {
+    IV_CHAPTERS = iv_read_chapters();
+
+    if (IV_CHAPTERS.length) {
+        iv_paint_chapter_marks();
+        player.on(['durationchange', 'loadedmetadata'], iv_paint_chapter_marks);
+
+        var chapter_display = player.getChild('controlBar').getChild('IvChapterDisplay');
+        if (chapter_display) chapter_display.update();
+    }
+
+    iv_setup_mini_player();
+});
 
 // Il riscontro a schermo parte solo dopo il primo avvio: il volume e la
 // velocità vengono impostati dalle preferenze appena il lettore nasce, e non
