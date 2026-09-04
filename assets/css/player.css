@@ -55,17 +55,6 @@
   flex-direction: row;
 }
 
-.video-js.player-style-youtube .vjs-big-play-button {
-  /*
-    Styles copied from video-js.min.css, definition of
-    .vjs-big-play-centered .vjs-big-play-button
-  */
-  top: 50%;
-  left: 50%;
-  margin-top: -0.81666em;
-  margin-left: -1.5em;
-}
-
 .video-js.player-style-youtube .vjs-menu-button-popup .vjs-menu {
   margin-bottom: 2em;
   padding-top: 2em
@@ -196,6 +185,13 @@ ul.vjs-menu-content::-webkit-scrollbar {
 /* Big "Play" Button */
 .video-js .vjs-big-play-button {
   background-color: rgba(35, 35, 35, 0.5);
+  /* Centrato per tutti gli stili: la regola equivalente esisteva solo per
+     player-style-youtube, quindi con gli altri il pulsante restava
+     nell'angolo in alto a sinistra. */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
 }
 
 .video-js:hover .vjs-big-play-button {
@@ -219,23 +215,36 @@ ul.vjs-menu-content::-webkit-scrollbar {
   object-fit: cover;
 }
 
+/*
+ * Dimensioni del lettore.
+ *
+ * Prima qui c'era `height: 0` con `padding-bottom: 82vh`, il modo in cui si
+ * facevano i riquadri proporzionati prima che esistesse `aspect-ratio`. Il
+ * problema è che 82vh non è un rapporto: è una frazione dell'altezza della
+ * finestra. Su un desktop in orizzontale somigliava per caso a un 16:9, ma su
+ * un telefono in verticale diventa una colonna nera altissima con il video
+ * schiacciato in cima.
+ *
+ * Ora il riquadro è un 16:9 dichiarato, e la larghezza è limitata in funzione
+ * dell'altezza concessa: su schermi bassi e larghi il video si restringe per
+ * lasciare spazio al titolo, su telefono prende tutta la larghezza e resta
+ * alto quanto deve.
+ */
 .player-dimensions.vjs-fluid {
-  padding-top: 82vh;
+  padding-top: 0;
 }
 
 video.video-js {
   position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
 }
 
 #player-container {
   position: relative;
-  padding-left: 0;
-  padding-right: 0;
-  margin-left: 1em;
-  margin-right: 1em;
-  padding-bottom: 82vh;
-  height: 0;
+  padding: 0;
+  margin-inline: auto;
 }
 
 .mobile-operations-bar {

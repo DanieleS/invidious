@@ -353,17 +353,13 @@
 /* --------------------------------------------------------------------------
  * Adattamento a schermi stretti
  * ------------------------------------------------------------------------ */
+/*
+ * Sotto i 1000px la testata non ha più spazio per stare su una riga sola:
+ * si impila. La navigazione NON sparisce — nasconderla lasciava chi naviga da
+ * telefono senza nessun modo di raggiungere iscrizioni, playlist e cronologia.
+ * Diventa una riga che scorre in orizzontale.
+ */
 @media (max-width: 1000px) {
-  .nav {
-    display: none;
-  }
-}
-
-@media (max-width: 700px) {
-  .shell {
-    padding-inline: var(--s-4);
-  }
-
   .masthead__in {
     height: auto;
     padding-block: var(--s-3);
@@ -372,21 +368,63 @@
   }
 
   .finder {
-    order: 3;
+    order: 2;
     flex-basis: 100%;
     max-width: none;
+  }
+
+  .nav {
+    order: 3;
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* I margini negativi fanno arrivare le pill fino al bordo dello schermo,
+       così si capisce che la riga continua oltre. */
+    margin-inline: calc(var(--s-5) * -1);
+    padding-inline: var(--s-5);
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/*
+ * Telefono in orizzontale: l'altezza è quello che manca, non la larghezza.
+ * Una testata appiccicata in cima che occupa tre righe si mangia un terzo
+ * dello schermo per sempre; qui scorre via con la pagina.
+ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .masthead {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+  .shell {
+    padding-inline: var(--s-4);
+  }
+
+  .nav {
+    margin-inline: calc(var(--s-4) * -1);
+    padding-inline: var(--s-4);
   }
 
   .masthead__user {
     display: none;
   }
 
+  /* Una colonna sola: a due colonne su un telefono i titoli andavano a capo
+     ogni due parole e le card perdevano ogni allineamento tra loro. */
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: var(--s-4) var(--s-3);
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-5);
   }
 
   .page {
     padding-block: var(--s-4) var(--s-7);
+  }
+
+  .page-head__title {
+    font-size: var(--t-lg);
   }
 }

@@ -478,12 +478,6 @@
 .card__tools:focus-within {
   opacity: 1;
 }
-@media (hover: none) {
-  .card__tools {
-    opacity: 1;
-  }
-}
-
 .card__tools a {
   display: grid;
   place-items: center;
@@ -499,6 +493,27 @@
   color: var(--accent-on);
   text-decoration: none;
 }
+
+/* Senza mouse non c'è passaggio del mouse, quindi le icone devono restare
+   visibili — ma sovrapposte all'anteprima ne coprivano il contenuto. Su touch
+   escono dalla cornice e diventano una riga discreta sotto di essa. */
+@media (hover: none) {
+  .card__tools {
+    position: static;
+    opacity: 1;
+    justify-content: flex-end;
+    margin-block-start: var(--s-2);
+  }
+
+  .card__tools a {
+    width: 30px;
+    height: 30px;
+    background: none;
+    color: var(--text-3);
+    backdrop-filter: none;
+  }
+}
+
 
 /* ==========================================================================
  * Riga compatta — correlati, risultati, cronologia
@@ -662,13 +677,13 @@
 /* ==========================================================================
  * Lettore: cornice e sorgenti
  * ========================================================================== */
-/* Su uno schermo largo un 16:9 a piena larghezza è alto quasi quanto la
-   finestra e spinge titolo, canale e descrizione sotto la piega. Limitando la
-   larghezza in funzione dell'altezza disponibile, il video resta grande ma
-   qualcosa sotto si vede sempre. */
+/* Il riquadro del lettore: un 16:9 vero, larghezza limitata da quanta altezza
+   possiamo concedergli. Su desktop si restringe per lasciare il titolo sopra
+   la piega; su telefono prende tutta la larghezza disponibile. */
 .player-shell {
-  width: 100%;
-  max-width: min(100%, calc((100vh - 210px) * 16 / 9));
+  position: relative;
+  width: min(100%, calc(72vh * 16 / 9));
+  aspect-ratio: 16 / 9;
   margin-inline: auto;
   border-radius: var(--r-panel);
   overflow: hidden;
@@ -677,9 +692,19 @@
 }
 
 .player-shell .video-js {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
+  height: 100%;
+}
+
+/* I link di servizio sotto il lettore (YouTube, incorpora, altra istanza) sono
+   utilità, non azioni: in rosso erano un muro di quattro link accesi. */
+.player-links a {
+  color: var(--text-2);
+}
+.player-links a:hover {
+  color: var(--accent-text);
 }
 
 /* La riga di link sotto il lettore: embed, audio, altra istanza. */
