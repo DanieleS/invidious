@@ -68,6 +68,7 @@ module Invidious::Routing
     get "/preferences", Routes::PreferencesRoute, :show
     post "/preferences", Routes::PreferencesRoute, :update
     get "/toggle_theme", Routes::PreferencesRoute, :toggle_theme
+    post "/set_volume", Routes::PreferencesRoute, :set_volume
     get "/data_control", Routes::PreferencesRoute, :data_control
     post "/data_control", Routes::PreferencesRoute, :update_data_control
 

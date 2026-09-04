@@ -1454,38 +1454,38 @@ if (video_data.params.video_start > 0 || video_data.params.video_end > 0) {
     player.currentTime(video_data.params.video_start);
 }
 
-/*
- * Volume e velocità di partenza.
- *
- * Il valore che arriva dal server è quello delle preferenze; sopra ci va
- * l'ultimo che è stato scelto qui dentro, se c'è. Serve perché a chi ha un
- * account il server manda sempre le preferenze dell'account (in
- * `before_all.cr` un utente riconosciuto sostituisce il cookie), quindi la
- * manopola del volume tornava al valore salvato a ogni video: il lettore
- * scriveva in un cookie che nessuno rileggeva più.
- *
- * Il volume è una cosa del momento e del posto in cui stai ascoltando, non una
- * preferenza da portarsi dietro fra dispositivi: sta bene nella memoria del
- * browser.
- */
-var IV_VOLUME_KEY = 'player_volume';
-
 player.volume(video_data.params.volume / 100);
 player.playbackRate(video_data.params.speed);
 
-(function () {
-    var saved = helpers.storage.get(IV_VOLUME_KEY);
-    if (!saved || typeof saved.volume !== 'number') return;
-
-    player.volume(helpers.clamp(saved.volume, 0, 1));
-    player.muted(!!saved.muted);
-})();
+/*
+ * Il volume scelto qui dentro finisce nelle preferenze, non in un angolo del
+ * browser: il numero che si vede nel lettore e quello nella pagina delle
+ * impostazioni devono essere lo stesso numero.
+ *
+ * Prima non ci arrivava. Il lettore scriveva nel cookie PREFS, ma
+ * `before_all.cr` sostituisce le preferenze del cookie con quelle
+ * dell'account appena riconosce l'utente: chi ha un account si ritrovava il
+ * volume delle impostazioni a ogni video, e quello scelto nel lettore non lo
+ * rileggeva più nessuno. La rotta `/set_volume` scrive dove serve — l'account
+ * se c'è, il cookie altrimenti.
+ *
+ * Si aspetta un secondo di quiete prima di salvare: trascinando la manopola il
+ * volume cambia venti volte, e venti scritture per una manopola sola sono
+ * diciannove di troppo.
+ */
+var iv_volume_stored = video_data.params.volume;
+var iv_volume_timer = null;
 
 player.on('volumechange', function () {
-    helpers.storage.set(IV_VOLUME_KEY, {
-        volume: player.volume(),
-        muted: player.muted()
-    });
+    var value = Math.round(player.volume() * 100);
+    if (value === iv_volume_stored) return;
+
+    if (iv_volume_timer) clearTimeout(iv_volume_timer);
+
+    iv_volume_timer = setTimeout(function () {
+        iv_volume_stored = value;
+        helpers.xhr('POST', '/set_volume?volume=' + value, {}, {});
+    }, 1000);
 });
 
 /**
@@ -1504,6 +1504,9 @@ function getCookieValue(name) {
 
 /**
  * Method for updating the 'PREFS' cookie (or creating it if missing)
+ *
+ * Il volume non passa più di qui: ha la sua rotta, che sa scrivere anche nelle
+ * preferenze di chi ha un account. Qui resta la velocità.
  *
  * @param {number} newVolume New volume defined (null if unchanged)
  * @param {number} newSpeed New speed defined (null if unchanged)
@@ -1550,10 +1553,6 @@ player.on('ratechange', function () {
         player.mobileUi(iv_mobile_ui_options());
     }
     if (iv_feedback_ready) iv_toast((Math.round(player.playbackRate() * 100) / 100) + '\u00d7');
-});
-
-player.on('volumechange', function () {
-    updateCookie(Math.ceil(player.volume() * 100), null);
 });
 
 player.on('waiting', function () {

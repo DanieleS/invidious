@@ -287,6 +287,43 @@ module Invidious::Routes::PreferencesRoute
     end
   end
 
+  # Salva soltanto il volume.
+  #
+  # `update` qui sopra ricostruisce tutte le preferenze dai campi del modulo:
+  # mandargli il solo volume azzererebbe tutto il resto. Serve quindi una
+  # rotta sua, con la stessa forma di `toggle_theme` qui sopra — che esiste
+  # per lo stesso identico motivo.
+  #
+  # Senza questa, chi ha un account non riusciva a cambiare volume in modo
+  # duraturo: il lettore scriveva nel cookie PREFS, ma `before_all` sostituisce
+  # le preferenze del cookie con quelle dell'account appena riconosce
+  # l'utente, quindi a ogni video tornava il valore salvato nelle impostazioni.
+  def self.set_volume(env)
+    volume = env.params.query["volume"]?.try &.to_i?
+    return error_json(400, "Missing or invalid volume") if volume.nil?
+
+    volume = volume.clamp(0, 100)
+
+    if user = env.get? "user"
+      user = user.as(User)
+      user.preferences.volume = volume
+      Invidious::Database::Users.update_preferences(user)
+    else
+      preferences = env.get("preferences").as(Preferences)
+      preferences.volume = volume
+
+      host = env.get("header_x-forwarded-host")
+      if alt = CONFIG.alternative_domains.index(host)
+        env.response.cookies["PREFS"] = Invidious::User::Cookies.prefs(CONFIG.alternative_domains[alt], preferences)
+      else
+        env.response.cookies["PREFS"] = Invidious::User::Cookies.prefs(CONFIG.domain, preferences)
+      end
+    end
+
+    env.response.content_type = "application/json"
+    "{}"
+  end
+
   def self.data_control(env)
     locale = env.get("preferences").as(Preferences).locale
 
