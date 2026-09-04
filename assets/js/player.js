@@ -848,6 +848,31 @@ if (location.pathname.startsWith('/embed/')) {
     cb.addChild(watch_on_invidious_button);
 }
 
+// Adatta il riquadro al rapporto reale del video.
+//
+// Il CSS parte da 16:9 perché la pagina va disegnata prima di sapere che video
+// è, ma un verticale o un 4:3 in una cornice 16:9 resta incorniciato di nero.
+// Appena i metadati arrivano sappiamo le dimensioni vere e le passiamo al CSS
+// come rapporto; da lì la cornice e il limite di larghezza si ricalcolano.
+(function () {
+    var shell = document.getElementById('player-container');
+    if (!shell) return;
+
+    function sync_aspect_ratio() {
+        var width = player.videoWidth();
+        var height = player.videoHeight();
+
+        // In modalità solo audio non c'è nessun fotogramma da misurare:
+        // meglio tenere il 16:9 di partenza che una cornice di altezza zero.
+        if (!width || !height) return;
+
+        shell.style.setProperty('--ar', (width / height).toFixed(4));
+    }
+
+    player.ready(sync_aspect_ratio);
+    player.on('loadedmetadata', sync_aspect_ratio);
+})();
+
 addEventListener('DOMContentLoaded', function () {
     // Save time during redirection on another instance
     const changeInstanceLink = document.querySelector('#watch-on-another-invidious-instance > a');

@@ -677,13 +677,24 @@
 /* ==========================================================================
  * Lettore: cornice e sorgenti
  * ========================================================================== */
-/* Il riquadro del lettore: un 16:9 vero, larghezza limitata da quanta altezza
-   possiamo concedergli. Su desktop si restringe per lasciare il titolo sopra
-   la piega; su telefono prende tutta la larghezza disponibile. */
+/*
+ * Il riquadro del lettore prende il rapporto del video, non un 16:9 fisso:
+ * un verticale o un 4:3 dentro una cornice 16:9 finisce incorniciato di nero.
+ *
+ * `--ar` è la larghezza diviso l'altezza, scritta da player.js quando arrivano
+ * i metadati del video. Il 16:9 qui è solo il valore di partenza, quello con
+ * cui la pagina viene disegnata prima di sapere che video è: serve perché il
+ * riquadro non cambi dimensione sotto gli occhi a caricamento avvenuto.
+ *
+ * Lo stesso numero limita anche la larghezza in funzione dell'altezza che
+ * possiamo concedere, così un verticale diventa una colonna alta e centrata
+ * invece di un 16:9 pieno di nero.
+ */
 .player-shell {
+  --ar: 1.7778;
   position: relative;
-  width: min(100%, calc(72vh * 16 / 9));
-  aspect-ratio: 16 / 9;
+  width: min(100%, calc(72vh * var(--ar)));
+  aspect-ratio: var(--ar);
   margin-inline: auto;
   border-radius: var(--r-panel);
   overflow: hidden;
