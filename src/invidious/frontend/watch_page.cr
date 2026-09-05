@@ -214,6 +214,9 @@ module Invidious::Frontend::WatchPage
       end
 
       str << "\t\t</select>\n"
+      str << "\t\t<span class=\"preference-description\">"
+      str << I18n.translate(locale, "offline_keep_open")
+      str << "</span>\n"
       str << "\t</div>\n"
 
       str << "\t<button type=\"button\" id=\"offline_save\" class=\"btn btn--accent\">\n"
@@ -225,26 +228,32 @@ module Invidious::Frontend::WatchPage
       str << "\t<div id=\"offline_progress\" class=\"offline-save__progress\" hidden>\n"
       str << "\t\t<div class=\"offline-bar\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\"></div>\n"
       str << "\t\t<p id=\"offline_status\" class=\"offline-save__status\" aria-live=\"polite\"></p>\n"
-      str << "\t\t<button type=\"button\" id=\"offline_cancel\" class=\"btn btn--quiet btn--sm\">"
+      str << "\t\t<button type=\"button\" id=\"offline_cancel\" class=\"btn btn--sm btn--quiet\">"
       str << I18n.translate(locale, "offline_cancel")
       str << "</button>\n"
       str << "\t</div>\n"
 
-      str << "\t<div id=\"offline_done\" class=\"offline-save__done\" hidden>\n"
-      str << "\t\t<p id=\"offline_done_text\"></p>\n"
-      str << "\t\t<div class=\"offline-save__actions\">\n"
-      str << "\t\t\t<a class=\"btn btn--quiet btn--sm\" href=\"/offline\">"
+      # Fatto e non fatto sono due avvisi come quelli del resto del sito:
+      # il bordo porta il colore, l'icona dice subito quale dei due è.
+      str << "\t<div id=\"offline_done\" class=\"notice notice--good\" hidden>\n"
+      str << "\t\t<svg class=\"icon notice__icon\"><use href=\"#i-check\"/></svg>\n"
+      str << "\t\t<div class=\"notice__body\">\n"
+      str << "\t\t\t<p id=\"offline_done_text\"></p>\n"
+      str << "\t\t\t<div class=\"offline-save__actions\">\n"
+      str << "\t\t\t\t<a class=\"btn btn--sm btn--quiet\" href=\"/offline\">"
       str << I18n.translate(locale, "offline_library")
       str << "</a>\n"
-      str << "\t\t\t<button type=\"button\" id=\"offline_delete\" class=\"btn btn--danger btn--sm\">"
+      str << "\t\t\t\t<button type=\"button\" id=\"offline_delete\" class=\"btn btn--sm btn--danger\">"
       str << I18n.translate(locale, "offline_remove")
       str << "</button>\n"
+      str << "\t\t\t</div>\n"
       str << "\t\t</div>\n"
       str << "\t</div>\n"
 
-      str << "\t<p class=\"offline-save__note\">"
-      str << I18n.translate(locale, "offline_keep_open")
-      str << "</p>\n"
+      str << "\t<div id=\"offline_error\" class=\"notice notice--bad\" hidden>\n"
+      str << "\t\t<svg class=\"icon notice__icon\"><use href=\"#i-alert\"/></svg>\n"
+      str << "\t\t<div class=\"notice__body\"><p id=\"offline_error_text\"></p></div>\n"
+      str << "\t</div>\n"
 
       str << "\t<script id=\"offline_data\" type=\"application/json\">"
       str << data.to_json.gsub("</", "<\\/")

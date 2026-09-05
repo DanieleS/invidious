@@ -28,15 +28,16 @@
     var done = document.getElementById('offline_done');
     var doneText = document.getElementById('offline_done_text');
     var deleteButton = document.getElementById('offline_delete');
+    var error = document.getElementById('offline_error');
+    var errorText = document.getElementById('offline_error_text');
 
     // Il pannello nasce nascosto: se siamo qui il JavaScript c'è.
     container.hidden = false;
 
     if (!window.indexedDB || !window.offlineDB) {
         saveButton.disabled = true;
-        status.textContent = data.unsupported;
-        progress.hidden = false;
-        cancelButton.hidden = true;
+        errorText.textContent = data.unsupported;
+        error.hidden = false;
         return;
     }
 
@@ -70,24 +71,31 @@
     function showIdle() {
         progress.hidden = true;
         done.hidden = true;
+        error.hidden = true;
         saveButton.hidden = false;
         saveButton.disabled = false;
         select.disabled = false;
         select.parentNode.hidden = false;
     }
 
+    // A cose fatte il selettore dei formati non serve più: quello che resta
+    // da decidere è se tenere il video o buttarlo.
     function showSaved(meta) {
         progress.hidden = true;
+        error.hidden = true;
         saveButton.hidden = true;
         select.parentNode.hidden = true;
         done.hidden = false;
         doneText.textContent = data.saved + ' · ' + meta.quality + ' · ' + formatBytes(meta.size);
     }
 
+    // Mentre scarica il pulsante sparisce invece di restare lì spento: quello
+    // che si può fare adesso è annullare, e c'è già il suo pulsante sotto.
     function showProgress(received, total) {
         progress.hidden = false;
         done.hidden = true;
-        saveButton.disabled = true;
+        error.hidden = true;
+        saveButton.hidden = true;
         select.disabled = true;
         cancelButton.hidden = false;
 
@@ -105,14 +113,14 @@
     }
 
     function showError(message) {
-        progress.hidden = false;
+        progress.hidden = true;
         done.hidden = true;
-        cancelButton.hidden = true;
+        error.hidden = false;
         saveButton.hidden = false;
         saveButton.disabled = false;
         select.disabled = false;
         bar.style.setProperty('--offline-progress', '0%');
-        status.textContent = data.failed + (message ? ' (' + message + ')' : '');
+        errorText.textContent = data.failed + (message ? ' (' + message + ')' : '');
     }
 
     // ---------------------------------------------------------------------

@@ -14,31 +14,36 @@
   # navigare da offline.
 %>
 
+<%
+  # Stessa intestazione della cronologia: titolo, una nota che dice quanto
+  # spazio c'è di mezzo, e l'azione distruttiva in fondo alla riga.
+%>
 <div class="page-head">
     <h1 class="page-head__title"><%= I18n.translate(locale, "offline_page_title") %></h1>
-    <button type="button" id="offline_clear" class="btn btn--danger btn--sm" hidden>
+    <span class="page-head__note" id="offline_usage" aria-live="polite"></span>
+    <button type="button" id="offline_clear" class="btn btn--sm btn--danger" hidden>
         <svg class="icon icon--sm"><use href="#i-trash"/></svg>
         <%= I18n.translate(locale, "offline_remove_all") %>
     </button>
 </div>
 
-<p id="offline_usage" class="offline-page__usage" aria-live="polite"></p>
-
 <div id="offline_stage" class="offline-stage" hidden>
     <video id="offline_media" class="offline-stage__media" controls playsinline preload="metadata"></video>
     <div class="offline-stage__bar">
         <h2 id="offline_stage_title" class="offline-stage__title" dir="auto"></h2>
-        <button type="button" id="offline_stage_close" class="btn btn--quiet btn--sm">
+        <button type="button" id="offline_stage_close" class="btn btn--sm btn--quiet">
             <svg class="icon icon--sm"><use href="#i-close"/></svg>
             <%= I18n.translate(locale, "offline_close_player") %>
         </button>
     </div>
 </div>
 
-<p id="offline_empty" class="panel" hidden><%= I18n.translate(locale, "offline_empty") %></p>
+<div id="offline_empty" class="panel" hidden>
+    <p><%= I18n.translate(locale, "offline_empty") %></p>
+</div>
 
 <noscript>
-    <p class="panel"><%= I18n.translate(locale, "offline_needs_javascript") %></p>
+    <div class="panel"><p><%= I18n.translate(locale, "offline_needs_javascript") %></p></div>
 </noscript>
 
 <div id="offline_list" class="grid"></div>

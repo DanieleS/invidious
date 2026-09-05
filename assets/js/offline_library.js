@@ -70,6 +70,29 @@
         return node;
     }
 
+    // Le icone dell'app sono <use> dentro uno sprite già in pagina, e vanno
+    // create nel namespace SVG: createElement le farebbe nascere HTML e non
+    // disegnerebbero niente.
+    function icon(href) {
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+
+        svg.setAttribute('class', 'icon icon--sm');
+        use.setAttribute('href', href);
+        svg.appendChild(use);
+
+        return svg;
+    }
+
+    function iconButton(href, title, onClick) {
+        var button = element('button');
+        button.type = 'button';
+        button.title = title;
+        button.appendChild(icon(href));
+        button.addEventListener('click', onClick);
+        return button;
+    }
+
     // ---------------------------------------------------------------------
     // Riproduzione
     // ---------------------------------------------------------------------
@@ -84,6 +107,7 @@
         if (poster) URL.revokeObjectURL(poster);
         playing = null;
         poster = null;
+        delete media.dataset.id;
 
         stage.hidden = true;
     }
@@ -91,6 +115,8 @@
     function play(meta) {
         window.offlineDB.media(meta.id).then(function (blob) {
             if (!blob) return;
+
+            media.dataset.id = meta.id;
 
             if (playing) URL.revokeObjectURL(playing);
             if (poster) URL.revokeObjectURL(poster);
@@ -120,13 +146,23 @@
     // Elenco
     // ---------------------------------------------------------------------
 
+    /*
+     * Una scheda uguale alle altre del sito (components/item.ecr): anteprima,
+     * comandi sopra l'anteprima, testo sotto. Cambia una cosa sola, ed è il
+     * senso della pagina: l'anteprima non porta da nessuna parte, fa partire
+     * il video da qui.
+     */
     function card(meta) {
         var node = element('div', 'card offline-card');
 
-        var frame = element('div', 'offline-card__frame');
-        var button = element('button', 'thumb offline-card__play');
-        button.type = 'button';
-        button.title = labels.play;
+        // Il riferimento posizionato che vuole `.thumb-actions`. Anche le
+        // schede del sito lo dichiarano così, inline.
+        var frame = element('div');
+        frame.style.position = 'relative';
+
+        var thumb = element('button', 'thumb offline-card__play');
+        thumb.type = 'button';
+        thumb.title = labels.play;
 
         if (meta.thumb) {
             var url = URL.createObjectURL(meta.thumb);
@@ -135,17 +171,46 @@
             var image = element('img');
             image.src = url;
             image.alt = '';
-            button.appendChild(image);
-        } else {
-            button.appendChild(element('span', 'thumbnail-placeholder'));
+            thumb.appendChild(image);
         }
 
-        if (meta.kind === 'audio')
-            button.appendChild(element('span', 'stamp', labels.audio_only));
-        else if (meta.lengthSeconds)
-            button.appendChild(element('span', 'stamp length', formatDuration(meta.lengthSeconds)));
+        // Senza anteprima resta la cornice vuota di `.thumb`, che è quello
+        // che il sito mostra in modalità leggera.
 
-        frame.appendChild(button);
+        if (meta.kind === 'audio')
+            thumb.appendChild(element('span', 'stamp', labels.audio_only));
+        else if (meta.lengthSeconds)
+            thumb.appendChild(element('span', 'stamp length', formatDuration(meta.lengthSeconds)));
+
+        thumb.addEventListener('click', function () { play(meta); });
+        frame.appendChild(thumb);
+
+        // Esporta ed elimina, sopra l'anteprima: gli stessi comandi che hanno
+        // le schede della cronologia e delle playlist.
+        var actions = element('div', 'thumb-actions');
+
+        actions.appendChild(iconButton('#i-save', labels.export, function () {
+            exportFile(meta);
+        }));
+
+        actions.appendChild(iconButton('#i-trash', labels.remove, function () {
+            if (!confirm(labels.confirm_remove)) return;
+            if (media.dataset.id === meta.id) stopPlaying();
+            window.offlineDB.remove(meta.id).then(render);
+        }));
+
+        frame.appendChild(actions);
+
+        // Dall'altro lato dell'anteprima le azioni di contesto, come nelle
+        // altre schede: qui ce n'è una sola, la pagina del video.
+        var tools = element('div', 'card__tools');
+        var page = element('a');
+        page.href = '/watch?v=' + meta.id;
+        page.title = labels.open_page;
+        page.appendChild(icon('#i-video'));
+        tools.appendChild(page);
+        frame.appendChild(tools);
+
         node.appendChild(frame);
 
         var body = element('div', 'card__body');
@@ -172,34 +237,7 @@
                 .filter(Boolean).join(' · ')));
 
         body.appendChild(text);
-
-        var actions = element('div', 'offline-card__actions');
-
-        var watch = element('a', 'btn btn--quiet btn--sm', labels.open_page);
-        watch.href = '/watch?v=' + meta.id;
-        actions.appendChild(watch);
-
-        var exportButton = element('button', 'btn btn--quiet btn--sm', labels.export);
-        exportButton.type = 'button';
-        exportButton.addEventListener('click', function () { exportFile(meta); });
-        actions.appendChild(exportButton);
-
-        var removeButton = element('button', 'btn btn--danger btn--sm', labels.remove);
-        removeButton.type = 'button';
-        removeButton.addEventListener('click', function () {
-            if (!confirm(labels.confirm_remove)) return;
-            if (playing && media.dataset.id === meta.id) stopPlaying();
-            window.offlineDB.remove(meta.id).then(render);
-        });
-        actions.appendChild(removeButton);
-
-        body.appendChild(actions);
         node.appendChild(body);
-
-        button.addEventListener('click', function () {
-            media.dataset.id = meta.id;
-            play(meta);
-        });
 
         return node;
     }

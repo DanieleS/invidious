@@ -1478,12 +1478,6 @@
  * pagina /offline con l'elenco di quello che è già stato salvato.
  * ========================================================================== */
 
-.offline-save__note {
-  font-size: var(--t-xs);
-  color: var(--text-3);
-  margin: 0;
-}
-
 .offline-save__status {
   font-size: var(--t-sm);
   color: var(--text-2);
@@ -1491,18 +1485,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.offline-save__progress,
-.offline-save__done {
+.offline-save__progress {
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
   align-items: flex-start;
-}
-
-.offline-save__done p {
-  margin: 0;
-  font-size: var(--t-sm);
-  color: var(--good);
 }
 
 .offline-save__actions {
@@ -1553,10 +1540,10 @@
  * La pagina /offline
  * ------------------------------------------------------------------------ */
 
-.offline-page__usage {
-  font-size: var(--t-sm);
-  color: var(--text-2);
-  margin: 0 0 var(--s-5);
+/* Lo spazio occupato è una nota d'intestazione come il conteggio dei video
+   nella cronologia: le cifre in tabellare, o cambiano larghezza da sole
+   mentre un download avanza. */
+#offline_usage {
   font-variant-numeric: tabular-nums;
 }
 
@@ -1573,7 +1560,8 @@
   display: block;
   width: 100%;
   max-height: 70vh;
-  background: #000;
+  /* Lo stesso nero della cornice del lettore in pagina video. */
+  background: #05070b;
 }
 
 .offline-stage__bar {
@@ -1593,38 +1581,16 @@
   white-space: nowrap;
 }
 
-.offline-card__frame {
-  position: relative;
-}
-
-/* L'anteprima è un pulsante, non un link: non porta da nessuna parte, fa
-   partire il video qui. Ma deve somigliare in tutto alle altre anteprime. */
+/* L'anteprima è un pulsante e non un link: non porta da nessuna parte, fa
+   partire il video qui sopra. Deve però restare identica a tutte le altre,
+   quindi si toglie soltanto quello che il browser aggiunge ai pulsanti — lo
+   sfondo no, che è quello della cornice vuota di `.thumb`. */
 .offline-card__play {
-  display: block;
   width: 100%;
   padding: 0;
   border: 0;
-  background: none;
-  cursor: pointer;
+  font: inherit;
+  color: inherit;
   text-align: start;
-}
-
-.offline-card__play .thumbnail-placeholder {
-  display: block;
-  width: 100%;
-}
-
-/* Nella scheda normale il corpo affianca il testo agli strumenti che
-   compaiono al passaggio del mouse. Qui gli strumenti non compaiono: sono
-   tre pulsanti che stanno sempre lì, e vanno sotto al testo. */
-.offline-card .card__body {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--s-2);
-}
-
-.offline-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
+  cursor: pointer;
 }
