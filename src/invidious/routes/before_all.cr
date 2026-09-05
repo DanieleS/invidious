@@ -47,12 +47,18 @@ module Invidious::Routes::BeforeAll
       "default-src 'none'",
       "script-src 'self'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data:",
+      # blob: perché le anteprime dei video salvati offline vengono da
+      # IndexedDB, non dalla rete.
+      "img-src 'self' data: blob:",
       "font-src 'self' data:",
       "connect-src 'self' " + COMPANION_CSP.companion_urls,
       "manifest-src 'self'",
       "media-src 'self' blob: " + COMPANION_CSP.companion_urls,
       "child-src 'self' blob:",
+      # Il service worker. Senza questa riga varrebbe il ripiego su child-src,
+      # che oggi dice la stessa cosa: meglio scriverlo, così non dipende da
+      # una regola che qualcuno potrebbe stringere domani.
+      "worker-src 'self'",
       "frame-src 'self'",
       "frame-ancestors " + frame_ancestors,
     }.join("; ")

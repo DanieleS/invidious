@@ -65,6 +65,15 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* La regola `[hidden] { display: none }` del browser vive nel foglio di stile
+   utente-agente e perde contro qualsiasi selettore scritto qui: basta una
+   classe che dichiari `display: flex` perché un elemento con `hidden` resti
+   in pagina. Siccome mostrare e nascondere via `hidden` è il modo con cui il
+   JavaScript accende i pannelli, quella regola qui deve vincere sempre. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;

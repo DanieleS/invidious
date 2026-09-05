@@ -28,6 +28,16 @@ module Invidious::Routes::Misc
     end
   end
 
+  # L'elenco dei video salvati sul dispositivo.
+  #
+  # Il contenuto lo mette il browser leggendo IndexedDB: qui serviamo solo il
+  # guscio, che è sempre identico e quindi il service worker può tenerlo in
+  # cache e mostrarlo anche quando la rete non c'è.
+  def self.offline(env)
+    locale = env.get("preferences").as(Preferences).locale
+    templated "offline"
+  end
+
   def self.privacy(env)
     locale = env.get("preferences").as(Preferences).locale
     templated "privacy"

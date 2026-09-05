@@ -1,0 +1,64 @@
+<% content_for "header" do %>
+<title><%= I18n.translate(locale, "offline_page_title") %> - Invidious</title>
+<meta name="robots" content="noindex">
+<% end %>
+
+<%
+  # Questa pagina arriva dal server vuota, di proposito.
+  #
+  # L'elenco dei video salvati vive solo nel browser (IndexedDB), quindi il
+  # server non ha niente da stampare e non deve nemmeno sapere cosa hai
+  # scaricato. Il vantaggio pratico è che il guscio è sempre lo stesso e il
+  # service worker può tenerlo in cache: è per questo che /offline è l'unica
+  # pagina che si apre davvero senza rete, ed è dove finisce chi prova a
+  # navigare da offline.
+%>
+
+<div class="page-head">
+    <h1 class="page-head__title"><%= I18n.translate(locale, "offline_page_title") %></h1>
+    <button type="button" id="offline_clear" class="btn btn--danger btn--sm" hidden>
+        <svg class="icon icon--sm"><use href="#i-trash"/></svg>
+        <%= I18n.translate(locale, "offline_remove_all") %>
+    </button>
+</div>
+
+<p id="offline_usage" class="offline-page__usage" aria-live="polite"></p>
+
+<div id="offline_stage" class="offline-stage" hidden>
+    <video id="offline_media" class="offline-stage__media" controls playsinline preload="metadata"></video>
+    <div class="offline-stage__bar">
+        <h2 id="offline_stage_title" class="offline-stage__title" dir="auto"></h2>
+        <button type="button" id="offline_stage_close" class="btn btn--quiet btn--sm">
+            <svg class="icon icon--sm"><use href="#i-close"/></svg>
+            <%= I18n.translate(locale, "offline_close_player") %>
+        </button>
+    </div>
+</div>
+
+<p id="offline_empty" class="panel" hidden><%= I18n.translate(locale, "offline_empty") %></p>
+
+<noscript>
+    <p class="panel"><%= I18n.translate(locale, "offline_needs_javascript") %></p>
+</noscript>
+
+<div id="offline_list" class="grid"></div>
+
+<script id="offline_page_data" type="application/json">
+<%=
+{
+    "play"           => I18n.translate(locale, "offline_play"),
+    "open_page"      => I18n.translate(locale, "offline_open_page"),
+    "export"         => I18n.translate(locale, "offline_export"),
+    "remove"         => I18n.translate(locale, "offline_remove"),
+    "audio_only"     => I18n.translate(locale, "offline_audio_only"),
+    "used"           => I18n.translate(locale, "offline_used"),
+    "available"      => I18n.translate(locale, "offline_available"),
+    "unsupported"    => I18n.translate(locale, "offline_unsupported"),
+    "confirm_remove" => I18n.translate(locale, "offline_confirm_delete"),
+    "confirm_clear"  => I18n.translate(locale, "offline_confirm_clear")
+}.to_pretty_json
+%>
+</script>
+
+<script src="/js/offline_db.js?v=<%= ASSET_COMMIT %>"></script>
+<script src="/js/offline_library.js?v=<%= ASSET_COMMIT %>"></script>

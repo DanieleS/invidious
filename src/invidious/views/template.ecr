@@ -4,6 +4,12 @@
   dark_mode = preferences.dark_mode
   current_page = env.get?("current_page").try &.as(String) || ""
 
+  # `current_page` è già codificato per finire dentro un `?referer=`, quindi
+  # "/feed/popular" ci arriva come "%2Ffeed%2Fpopular" e non si può
+  # confrontare con il link di una voce di menu. Per sapere in che pagina
+  # siamo serve il percorso vero, non la sua versione da querystring.
+  current_path = env.request.path
+
   # Il menu delle sezioni vive nella testata. Chi non ha effettuato l'accesso
   # non ha iscrizioni né playlist, quindi quelle voci spariscono.
   feed_menu = preferences.feed_menu.dup
@@ -25,6 +31,15 @@
     <link rel="mask-icon" href="/safari-pinned-tab.svg?v=<%= ASSET_COMMIT %>" color="#dc2a3a">
     <meta name="msapplication-TileColor" content="#0a0d13">
     <meta name="theme-color" content="#0a0d13">
+
+    <%
+      # Safari su iOS ignora buona parte del manifest: senza questi tre meta
+      # l'icona sulla schermata home apre una scheda del browser invece
+      # dell'app a tutto schermo.
+    %>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Invidious">
     <link title="Invidious" type="application/opensearchdescription+xml" rel="search" href="/opensearch.xml">
 
     <%
@@ -91,8 +106,14 @@
                     Invidious
                 </a>
 
-                <% if !feed_menu.empty? %>
-                    <nav class="nav" aria-label="<%= I18n.translate(locale, "preferences_feed_menu_label") %>">
+                <%
+                  # La voce "Offline" sta in coda al menu e non dipende dalle
+                  # preferenze: i video salvati sono l'unica cosa che si può
+                  # ancora aprire quando la rete non c'è, e devono essere
+                  # raggiungibili da qualsiasi pagina.
+                %>
+                <nav class="nav" aria-label="<%= I18n.translate(locale, "preferences_feed_menu_label") %>">
+                    <% if !feed_menu.empty? %>
                         <% feed_menu.each do |feed| %>
                             <%
                               feed_path = "/feed/#{feed.downcase}"
@@ -105,19 +126,34 @@
                                           else                      "i-search"
                                           end
                             %>
-                            <a class="nav__item" href="<%= feed_path %>"<% if current_page.starts_with?(feed_path) %> aria-current="page"<% end %>>
+                            <a class="nav__item" href="<%= feed_path %>"<% if current_path.starts_with?(feed_path) %> aria-current="page"<% end %>>
                                 <svg class="icon icon--sm"><use href="#<%= feed_icon %>"/></svg>
                                 <%= I18n.translate(locale, feed) %>
                             </a>
                         <% end %>
-                    </nav>
-                <% end %>
+                    <% end %>
+
+                    <a class="nav__item" href="/offline"<% if current_path.starts_with?("/offline") %> aria-current="page"<% end %>>
+                        <svg class="icon icon--sm"><use href="#i-offline"/></svg>
+                        <%= I18n.translate(locale, "offline_page_title") %>
+                    </a>
+                </nav>
 
                 <% if navbar_search %>
                     <% autofocus = false %><%= rendered "components/search_box" %>
                 <% end %>
 
                 <div class="masthead__tools">
+                    <%
+                      # Nasce nascosto: lo mostra pwa.js solo se il browser ci
+                      # offre davvero il prompt di installazione. Un pulsante
+                      # "Installa" che non installa niente è una bugia.
+                    %>
+                    <button type="button" id="install_app" class="iconbtn" title="<%= I18n.translate(locale, "pwa_install") %>" hidden>
+                        <svg class="icon"><use href="#i-save"/></svg>
+                        <span class="sr-only"><%= I18n.translate(locale, "pwa_install") %></span>
+                    </button>
+
                     <a id="toggle_theme" class="iconbtn" href="/toggle_theme?referer=<%= env.get?("current_page") %>" title="<%= I18n.translate(locale, "toggle_theme") %>">
                         <svg class="icon" id="toggle_theme_icon"><use href="#i-sun"/></svg>
                         <span class="sr-only"><%= I18n.translate(locale, "toggle_theme") %></span>
@@ -225,6 +261,9 @@
 
     <script src="/js/handlers.js?v=<%= ASSET_COMMIT %>"></script>
     <script src="/js/themes.js?v=<%= ASSET_COMMIT %>"></script>
+
+    <script id="pwa_data" type="application/json"><%= {"version" => ASSET_COMMIT}.to_json %></script>
+    <script src="/js/pwa.js?v=<%= ASSET_COMMIT %>"></script>
     <% if env.get? "user" %>
         <script src="/js/sse.js?v=<%= ASSET_COMMIT %>"></script>
         <script id="notification_data" type="application/json">

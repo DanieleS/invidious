@@ -288,6 +288,8 @@ we're going to need to do it here in order to allow for translations.
 
         <%= Invidious::Frontend::WatchPage.download_widget(locale, video, video_assets) %>
 
+        <%= Invidious::Frontend::WatchPage.offline_widget(locale, video, video_assets) %>
+
         <div id="comments" class="comments threads">
             <% if (params.comments <=> ["", ""]) == 0 %>
                 <div id="comments-disabled-message" class="panel">
@@ -385,3 +387,5 @@ we're going to need to do it here in order to allow for translations.
 
 <script src="/js/comments.js?v=<%= ASSET_COMMIT %>"></script>
 <script src="/js/watch.js?v=<%= ASSET_COMMIT %>"></script>
+<script src="/js/offline_db.js?v=<%= ASSET_COMMIT %>"></script>
+<script src="/js/offline_save.js?v=<%= ASSET_COMMIT %>"></script>

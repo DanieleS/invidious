@@ -202,6 +202,29 @@ def number_to_short_text(number)
   text
 end
 
+# Dimensione di un file in unità che una persona legge al volo.
+#
+# Base 1024, come fanno i telefoni quando dicono quanto spazio resta: un
+# video che il sistema chiama "48 MB" non deve diventare "50 MB" qui.
+def format_bytes(bytes : Int) : String
+  return "#{bytes} B" if bytes < 1024
+
+  units = {"KB", "MB", "GB", "TB"}
+  value = bytes.to_f
+  unit = units[0]
+
+  units.each do |candidate|
+    unit = candidate
+    value /= 1024
+    break if value < 1024
+  end
+
+  # Sotto i 10 mostriamo un decimale, sopra no: "1.4 GB" è utile,
+  # "428.7 MB" è solo rumore.
+  formatted = value < 10 ? value.round(1).to_s : value.round.to_i.to_s
+  return "#{formatted.rchop(".0")} #{unit}"
+end
+
 def arg_array(array, start = 1)
   if array.size == 0
     args = "NULL"
