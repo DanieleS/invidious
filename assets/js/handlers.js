@@ -125,6 +125,40 @@
         });
     }
 
+    // I menu a tendina sono <details>: aprirsi e chiudersi lo sanno fare da
+    // soli, anche senza di noi. Quello che il browser non fa è chiuderli
+    // quando premi da un'altra parte o premi Esc, ed è l'unica cosa che
+    // aggiungiamo: una tendina dimenticata aperta alle spalle copre la
+    // pagina e non si capisce più cosa stai guardando.
+    function close_menus(except) {
+        document.querySelectorAll('details.menu[open]').forEach(function (menu) {
+            if (menu !== except) menu.removeAttribute('open');
+        });
+    }
+
+    addEventListener('click', function (event) {
+        var inside = event.target.closest ? event.target.closest('details.menu') : null;
+        close_menus(inside);
+    });
+
+    addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') return;
+
+        var open = document.querySelector('details.menu[open]');
+        if (!open) return;
+
+        open.removeAttribute('open');
+        open.querySelector('summary').focus();
+    });
+
+    // Scelto un formato da scaricare, la tendina ha finito il suo lavoro. Il
+    // salvataggio offline no: quello resta lì a mostrare come sta andando.
+    document.querySelectorAll('details.menu form').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            form.closest('details.menu').removeAttribute('open');
+        });
+    });
+
     // Handle keypresses
     addEventListener('keydown', function (event) {
         // Ignore modifier keys

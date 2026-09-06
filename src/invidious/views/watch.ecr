@@ -197,6 +197,8 @@ we're going to need to do it here in order to allow for translations.
                     <%= I18n.translate(locale, "Audio mode") %>
                 </a>
             <% end %>
+
+            <%= Invidious::Frontend::WatchPage.download_widget(locale, video, video_assets) %>
         </div>
 
         <div id="description-box" class="desc">
@@ -285,10 +287,6 @@ we're going to need to do it here in order to allow for translations.
                 <script src="/js/playlist_widget.js?v=<%= Time.utc.to_unix_ms %>"></script>
             <% end %>
         <% end %>
-
-        <%= Invidious::Frontend::WatchPage.download_widget(locale, video, video_assets) %>
-
-        <%= Invidious::Frontend::WatchPage.offline_widget(locale, video, video_assets) %>
 
         <div id="comments" class="comments threads">
             <% if (params.comments <=> ["", ""]) == 0 %>

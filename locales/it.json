@@ -534,8 +534,7 @@
     "Skip to content": "Vai al contenuto",
     "Mark as watched": "Segna come visto",
     "offline_page_title": "Offline",
-    "offline_save_as": "Salva sul dispositivo come: ",
-    "offline_save": "Salva sul dispositivo",
+    "offline_save": "Salva per l'offline",
     "offline_audio_only": "Solo audio",
     "offline_saving": "Salvataggio…",
     "offline_saved": "Salvato sul dispositivo",
@@ -549,12 +548,13 @@
     "offline_open_page": "Pagina del video",
     "offline_export": "Esporta il file",
     "offline_close_player": "Chiudi il lettore",
-    "offline_empty": "Non hai ancora salvato niente. Apri un video e usa «Salva sul dispositivo»: lo troverai qui e si aprirà anche senza connessione.",
+    "offline_empty": "Non hai ancora salvato niente. Apri un video, usa Scarica › «Salva per l’offline», e lo troverai qui anche senza connessione.",
     "offline_needs_javascript": "I video salvati stanno nella memoria del browser, quindi questa pagina ha bisogno di JavaScript per leggerli.",
     "offline_used": "`x` occupati sul dispositivo",
     "offline_available": "`x` ancora liberi",
     "offline_unsupported": "Questo browser non può tenere i video sul dispositivo.",
     "offline_confirm_delete": "Vuoi togliere questo video dal dispositivo?",
     "offline_confirm_clear": "Vuoi togliere dal dispositivo tutti i video salvati?",
-    "pwa_install": "Installa l'app"
+    "pwa_install": "Installa l'app",
+    "offline_download_file": "Scarica il file"
 }

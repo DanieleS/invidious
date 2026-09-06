@@ -18,6 +18,33 @@ module Invidious::Frontend::WatchPage
     end
   end
 
+  # Un formato che si può tenere sul dispositivo.
+  alias OfflineFormat = NamedTuple(
+    itag: Int32,
+    label: String,
+    kind: String,
+    ext: String,
+    mime: String,
+    size: Int64)
+
+  # Il menu «scarica», nella riga delle azioni del video.
+  #
+  # Dentro ci sono due modi di portarsi via il video, e la differenza fra i
+  # due è dove finisce:
+  #
+  #   * salvarlo per l'offline lo mette dentro il browser, dove Invidious lo
+  #     sa ritrovare e riprodurre senza rete;
+  #   * scaricare il file lo fa uscire dal browser e finire fra i file del
+  #     telefono, dove lo trovano la galleria e qualsiasi altro lettore.
+  #
+  # Il secondo è quello che questo pannello ha sempre fatto, e resta identico:
+  # stesso modulo, stessa destinazione, stessi formati. Le voci sono pulsanti
+  # d'invio con il loro valore addosso, quindi funzionano anche senza
+  # JavaScript — e il menu è un <details>, che senza JavaScript si apre lo
+  # stesso.
+  #
+  # Sta in un menu e non in un pannello aperto perché nella pagina di un video
+  # è un'eccezione, non il motivo per cui sei lì.
   def download_widget(locale : String, video : Video, video_assets : VideoAssets) : String
     if CONFIG.disabled?("downloads")
       return "<p id=\"download\">#{I18n.translate(locale, "Download is disabled")}</p>"
@@ -33,26 +60,50 @@ module Invidious::Frontend::WatchPage
       url = "#{invidious_companion.public_url}/download?check=#{invidious_companion_encrypt(video.id)}"
     end
 
+    offline = offline_formats(locale, video, video_assets)
+
     return String.build(4000) do |str|
-      str << "<form"
-      str << " class=\"panel panel--tight\""
-      str << " action='" << HTML.escape(url) << "'"
-      str << " method='post'"
-      str << " rel='noopener noreferrer'"
-      str << " target='_blank'>"
+      str << "<details class=\"menu\" id=\"download\">\n"
+      str << "\t<summary class=\"btn\">\n"
+      str << "\t\t<svg class=\"icon icon--sm\"><use href=\"#i-save\"/></svg>\n"
+      str << "\t\t<span id=\"download_label\">" << I18n.translate(locale, "Download") << "</span>\n"
+      str << "\t</summary>\n"
+
+      str << "\t<div class=\"menu__pop\">\n"
+
+      str << "\t\t<form"
+      str << " action=\"" << HTML.escape(url) << "\""
+      str << " method=\"post\""
+      str << " rel=\"noopener noreferrer\""
+      str << " target=\"_blank\">"
       str << '\n'
 
       # Hidden inputs for video id and title
-      str << "<input type='hidden' name='id' value='" << video.id << "'/>\n"
-      str << "<input type='hidden' name='title' value='" << HTML.escape(video.title) << "'/>\n"
+      str << "\t\t<input type=\"hidden\" name=\"id\" value=\"" << video.id << "\"/>\n"
+      str << "\t\t<input type=\"hidden\" name=\"title\" value=\"" << HTML.escape(video.title) << "\"/>\n"
 
-      str << "\t<div class=\"field field--stack\">\n"
+      # Il gruppo dell'offline nasce nascosto: lo accende offline_save.js dopo
+      # aver visto che il browser sa tenere i video. Senza JavaScript non
+      # funzionerebbe, e una voce di menu che non fa niente è peggio di una
+      # voce che non c'è.
+      if !offline.empty?
+        str << "\t\t<div id=\"offline_group\" class=\"menu__group\" hidden>\n"
+        str << "\t\t\t<p class=\"menu__title\">" << I18n.translate(locale, "offline_save") << "</p>\n"
 
-      str << "\t\t<label for='download_widget'>"
-      str << I18n.translate(locale, "Download as: ")
-      str << "</label>\n"
+        offline.each do |fmt|
+          str << "\t\t\t<button type=\"button\" class=\"menu__item\" data-offline-itag=\"" << fmt[:itag] << "\">"
+          str << "<span>" << HTML.escape(fmt[:label]) << "</span>"
+          str << "<span class=\"menu__meta\">" << fmt[:ext]
+          str << " &middot; " << format_bytes(fmt[:size]) if fmt[:size] > 0
+          str << "</span>"
+          str << "</button>\n"
+        end
 
-      str << "\t\t<select name='download_widget' id='download_widget'>\n"
+        str << "\t\t</div>\n"
+      end
+
+      str << "\t\t<div class=\"menu__group\">\n"
+      str << "\t\t\t<p class=\"menu__title\">" << I18n.translate(locale, "offline_download_file") << "</p>\n"
 
       # Non-DASH videos (audio+video)
 
@@ -63,9 +114,7 @@ module Invidious::Frontend::WatchPage
 
         value = {"itag": option["itag"], "ext": mimetype.split("/")[1]}.to_json
 
-        str << "\t\t\t<option value='" << value << "'>"
-        str << (height || "~240") << "p - " << mimetype
-        str << "</option>\n"
+        str << download_item(value, "#{height || "~240"}p", mimetype)
       end
 
       # DASH video streams
@@ -75,9 +124,11 @@ module Invidious::Frontend::WatchPage
 
         value = {"itag": option["itag"], "ext": mimetype.split("/")[1]}.to_json
 
-        str << "\t\t\t<option value='" << value << "'>"
-        str << option["qualityLabel"] << " - " << mimetype << " @ " << option["fps"] << "fps - video only"
-        str << "</option>\n"
+        str << download_item(
+          value,
+          option["qualityLabel"].to_s,
+          "#{mimetype} @ #{option["fps"]}fps - video only"
+        )
       end
 
       # DASH audio streams
@@ -87,9 +138,15 @@ module Invidious::Frontend::WatchPage
 
         value = {"itag": option["itag"], "ext": mimetype.split("/")[1]}.to_json
 
-        str << "\t\t\t<option value='" << value << "'>"
-        str << mimetype << " @ " << (option["bitrate"]?.try &.as_i./ 1000) << "k - audio only"
-        str << "</option>\n"
+        # In una voce di menu l'etichetta dice cos'è e il dettaglio dice
+        # quale: "audio/mp4" come titolo non aiuta nessuno a scegliere.
+        # Divisione intera, perché `/` fra interi in Crystal dà un decimale
+        # e "130.0k" non lo scrive nessuno.
+        str << download_item(
+          value,
+          I18n.translate(locale, "offline_audio_only"),
+          "#{mimetype} @ #{option["bitrate"]?.try &.as_i.// 1000}k"
+        )
       end
 
       # Subtitles (a.k.a "closed captions")
@@ -97,52 +154,61 @@ module Invidious::Frontend::WatchPage
       video_assets.captions.each do |caption|
         value = {"label": caption.name, "ext": "#{caption.language_code}.vtt"}.to_json
 
-        str << "\t\t\t<option value='" << value << "'>"
-        str << I18n.translate(locale, "download_subtitles", I18n.translate(locale, caption.name))
-        str << "</option>\n"
+        str << download_item(
+          value,
+          I18n.translate(locale, "download_subtitles", I18n.translate(locale, caption.name)),
+          ""
+        )
       end
 
-      # End of form
+      str << "\t\t</div>\n"
+      str << "\t\t</form>\n"
 
-      str << "\t\t</select>\n"
+      str << offline_states(locale, video, offline) if !offline.empty?
+
       str << "\t</div>\n"
-
-      str << "\t<button type=\"submit\" class=\"btn btn--accent\">\n"
-      str << "\t\t<svg class=\"icon icon--sm\"><use href=\"#i-save\"/></svg>\n"
-      str << "\t\t" << I18n.translate(locale, "Download") << '\n'
-      str << "\t</button>\n"
-
-      str << "</form>\n"
+      str << "</details>\n"
     end
   end
 
-  # Il pannello «salva sul dispositivo».
+  # Una voce del menu che scarica il file.
   #
-  # Il salvataggio offline vive tutto nel browser: qui il server si limita a
-  # stampare l'elenco dei formati scaricabili e i dati del video, poi
-  # offline_save.js fa il resto. Il pannello nasce nascosto e viene mostrato
-  # dal JavaScript: senza JavaScript non funzionerebbe, e un pannello che non
-  # funziona è peggio di un pannello che non c'è.
-  #
-  # Offriamo solo formati che si reggono da soli: i flussi progressivi
-  # (video+audio nello stesso file) e una traccia di solo audio. I flussi
-  # adattivi separati richiederebbero di rimettere insieme video e audio nel
-  # browser, che è tutt'altro mestiere.
-  def offline_widget(locale : String, video : Video, video_assets : VideoAssets) : String
-    # Il download passa dal proxy dell'istanza: /latest_version rimanda a
-    # /videoplayback, che si rifiuta di servire qualsiasi cosa se "dash" è
-    # spento. Se manca uno dei tre interruttori non c'è niente da offrire.
-    return "" if CONFIG.disabled?("downloads") || CONFIG.disabled?("local") || CONFIG.disabled?("dash")
-    return "" if CONFIG.dmca_content.includes?(video.id)
+  # È un pulsante d'invio che si porta dietro il proprio valore: il modulo
+  # arriva al server esattamente come quando al suo posto c'era un elenco a
+  # discesa, quindi /download non si accorge del cambiamento e la cosa
+  # continua a funzionare a JavaScript spento.
+  private def download_item(value : String, label : String, meta : String) : String
+    return String.build do |str|
+      str << "\t\t\t<button type=\"submit\" class=\"menu__item\""
+      str << " name=\"download_widget\" value=\"" << HTML.escape(value) << "\">"
+      str << "<span>" << HTML.escape(label) << "</span>"
+      str << "<span class=\"menu__meta\">" << HTML.escape(meta) << "</span>" if !meta.empty?
+      str << "</button>\n"
+    end
+  end
 
-    # Una diretta non ha un file da scaricare, ha un flusso che non finisce.
-    return "" if video.live_now
+  # I formati che si possono tenere sul dispositivo.
+  #
+  # Solo quelli che si reggono da soli: i flussi progressivi, che hanno video
+  # e audio nello stesso file, e la migliore traccia di solo audio. I flussi
+  # adattivi separati richiederebbero di rimettere insieme le due tracce nel
+  # browser, che è tutt'altro mestiere.
+  #
+  # Vuoto vuol dire «qui non si può», e il gruppo non viene nemmeno stampato.
+  private def offline_formats(locale : String, video : Video, video_assets : VideoAssets) : Array(OfflineFormat)
+    formats = [] of OfflineFormat
+
+    # Il salvataggio passa dal proxy dell'istanza: /latest_version rimanda a
+    # /videoplayback, che si rifiuta di servire qualsiasi cosa se "dash" è
+    # spento. Se manca uno dei due interruttori non c'è niente da offrire.
+    return formats if CONFIG.disabled?("local") || CONFIG.disabled?("dash")
 
     # Con Companion il file arriva da un altro dominio, che non è detto
     # risponda con gli header CORS necessari a leggerlo da JavaScript.
-    return "" if CONFIG.invidious_companion.present?
+    return formats if CONFIG.invidious_companion.present?
 
-    formats = [] of NamedTuple(itag: Int32, label: String, kind: String, ext: String, mime: String, size: Int64)
+    # Una diretta non ha un file da scaricare, ha un flusso che non finisce.
+    return formats if video.live_now
 
     video_assets.full_videos.each do |fmt|
       itag = fmt["itag"]?.try &.as_i
@@ -181,8 +247,13 @@ module Invidious::Frontend::WatchPage
       }
     end
 
-    return "" if formats.empty?
+    return formats
+  end
 
+  # Avanzamento, esito e dati del salvataggio offline. Stanno in fondo al
+  # menu, sotto le voci, e nascono tutti nascosti: li accende offline_save.js
+  # quando c'è qualcosa da dire.
+  private def offline_states(locale : String, video : Video, formats : Array(OfflineFormat)) : String
     data = {
       "id"             => video.id,
       "title"          => video.title,
@@ -193,73 +264,51 @@ module Invidious::Frontend::WatchPage
       "saving"         => I18n.translate(locale, "offline_saving"),
       "saved"          => I18n.translate(locale, "offline_saved"),
       "failed"         => I18n.translate(locale, "offline_failed"),
-      "unsupported"    => I18n.translate(locale, "offline_unsupported"),
       "confirm_delete" => I18n.translate(locale, "offline_confirm_delete"),
     }
 
-    return String.build(2000) do |str|
-      str << "<div id=\"offline_widget\" class=\"panel panel--tight offline-save\" hidden>\n"
-
-      str << "\t<div class=\"field field--stack\">\n"
-      str << "\t\t<label for=\"offline_format\">"
-      str << I18n.translate(locale, "offline_save_as")
-      str << "</label>\n"
-      str << "\t\t<select id=\"offline_format\" name=\"offline_format\">\n"
-
-      formats.each do |fmt|
-        str << "\t\t\t<option value=\"" << fmt[:itag] << "\">"
-        str << HTML.escape(fmt[:label]) << " &middot; " << fmt[:ext]
-        str << " &middot; " << format_bytes(fmt[:size]) if fmt[:size] > 0
-        str << "</option>\n"
-      end
-
-      str << "\t\t</select>\n"
-      str << "\t\t<span class=\"preference-description\">"
+    return String.build(1500) do |str|
+      # Il valore vero della barra lo scrive il JavaScript su --offline-progress.
+      str << "\t\t<div id=\"offline_progress\" class=\"menu__state\" hidden>\n"
+      str << "\t\t\t<div class=\"offline-bar\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\"></div>\n"
+      str << "\t\t\t<p id=\"offline_status\" class=\"offline-save__status\" aria-live=\"polite\"></p>\n"
+      str << "\t\t\t<p class=\"preference-description\">"
       str << I18n.translate(locale, "offline_keep_open")
-      str << "</span>\n"
-      str << "\t</div>\n"
-
-      str << "\t<button type=\"button\" id=\"offline_save\" class=\"btn btn--accent\">\n"
-      str << "\t\t<svg class=\"icon icon--sm\"><use href=\"#i-save\"/></svg>\n"
-      str << "\t\t<span>" << I18n.translate(locale, "offline_save") << "</span>\n"
-      str << "\t</button>\n"
-
-      # Avanzamento. Il valore vero lo scrive il JavaScript su --offline-progress.
-      str << "\t<div id=\"offline_progress\" class=\"offline-save__progress\" hidden>\n"
-      str << "\t\t<div class=\"offline-bar\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\"></div>\n"
-      str << "\t\t<p id=\"offline_status\" class=\"offline-save__status\" aria-live=\"polite\"></p>\n"
-      str << "\t\t<button type=\"button\" id=\"offline_cancel\" class=\"btn btn--sm btn--quiet\">"
+      str << "</p>\n"
+      str << "\t\t\t<button type=\"button\" id=\"offline_cancel\" class=\"btn btn--sm btn--quiet\">"
       str << I18n.translate(locale, "offline_cancel")
       str << "</button>\n"
-      str << "\t</div>\n"
+      str << "\t\t</div>\n"
 
       # Fatto e non fatto sono due avvisi come quelli del resto del sito:
       # il bordo porta il colore, l'icona dice subito quale dei due è.
-      str << "\t<div id=\"offline_done\" class=\"notice notice--good\" hidden>\n"
-      str << "\t\t<svg class=\"icon notice__icon\"><use href=\"#i-check\"/></svg>\n"
-      str << "\t\t<div class=\"notice__body\">\n"
-      str << "\t\t\t<p id=\"offline_done_text\"></p>\n"
-      str << "\t\t\t<div class=\"offline-save__actions\">\n"
-      str << "\t\t\t\t<a class=\"btn btn--sm btn--quiet\" href=\"/offline\">"
+      str << "\t\t<div id=\"offline_done\" class=\"menu__state\" hidden>\n"
+      str << "\t\t\t<div class=\"notice notice--good\">\n"
+      str << "\t\t\t\t<svg class=\"icon notice__icon\"><use href=\"#i-check\"/></svg>\n"
+      str << "\t\t\t\t<div class=\"notice__body\">\n"
+      str << "\t\t\t\t\t<p id=\"offline_done_text\"></p>\n"
+      str << "\t\t\t\t\t<div class=\"cluster\">\n"
+      str << "\t\t\t\t\t\t<a class=\"btn btn--sm btn--quiet\" href=\"/offline\">"
       str << I18n.translate(locale, "offline_library")
       str << "</a>\n"
-      str << "\t\t\t\t<button type=\"button\" id=\"offline_delete\" class=\"btn btn--sm btn--danger\">"
+      str << "\t\t\t\t\t\t<button type=\"button\" id=\"offline_delete\" class=\"btn btn--sm btn--danger\">"
       str << I18n.translate(locale, "offline_remove")
       str << "</button>\n"
+      str << "\t\t\t\t\t</div>\n"
+      str << "\t\t\t\t</div>\n"
       str << "\t\t\t</div>\n"
       str << "\t\t</div>\n"
-      str << "\t</div>\n"
 
-      str << "\t<div id=\"offline_error\" class=\"notice notice--bad\" hidden>\n"
-      str << "\t\t<svg class=\"icon notice__icon\"><use href=\"#i-alert\"/></svg>\n"
-      str << "\t\t<div class=\"notice__body\"><p id=\"offline_error_text\"></p></div>\n"
-      str << "\t</div>\n"
+      str << "\t\t<div id=\"offline_error\" class=\"menu__state\" hidden>\n"
+      str << "\t\t\t<div class=\"notice notice--bad\">\n"
+      str << "\t\t\t\t<svg class=\"icon notice__icon\"><use href=\"#i-alert\"/></svg>\n"
+      str << "\t\t\t\t<div class=\"notice__body\"><p id=\"offline_error_text\"></p></div>\n"
+      str << "\t\t\t</div>\n"
+      str << "\t\t</div>\n"
 
-      str << "\t<script id=\"offline_data\" type=\"application/json\">"
+      str << "\t\t<script id=\"offline_data\" type=\"application/json\">"
       str << data.to_json.gsub("</", "<\\/")
       str << "</script>\n"
-
-      str << "</div>\n"
     end
   end
 end

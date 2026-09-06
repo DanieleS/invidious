@@ -1,7 +1,7 @@
 'use strict';
 
 /*
- * offline_save.js — il pannello «salva sul dispositivo» nella pagina video.
+ * offline_save.js — le voci «salva per l'offline» nel menu della pagina video.
  *
  * Scarica il flusso scelto passando dal proxy dell'istanza (/latest_version,
  * che rimanda a /videoplayback) e lo mette in IndexedDB. Sono solo formati
@@ -9,18 +9,20 @@
  * audio — quindi quello che finisce in memoria si riproduce così com'è,
  * senza rimettere insieme niente.
  *
- * Il download vive finché vive la pagina: se la chiudi, si interrompe. È il
- * limite di farlo senza Background Fetch, ed è scritto nel pannello.
+ * Le altre voci del menu, quelle che scaricano il file, non passano di qui:
+ * sono pulsanti d'invio di un modulo e non hanno bisogno di JavaScript.
+ *
+ * Il salvataggio vive finché vive la pagina: se la chiudi, si interrompe. È
+ * il limite di farlo senza Background Fetch, ed è scritto nel menu mentre va.
  */
 
 (function () {
-    var container = document.getElementById('offline_widget');
-    if (!container) return;
+    var group = document.getElementById('offline_group');
+    if (!group) return;
 
     var data = JSON.parse(document.getElementById('offline_data').textContent);
 
-    var select = document.getElementById('offline_format');
-    var saveButton = document.getElementById('offline_save');
+    var label = document.getElementById('download_label');
     var progress = document.getElementById('offline_progress');
     var bar = progress.querySelector('.offline-bar');
     var status = document.getElementById('offline_status');
@@ -31,17 +33,13 @@
     var error = document.getElementById('offline_error');
     var errorText = document.getElementById('offline_error_text');
 
-    // Il pannello nasce nascosto: se siamo qui il JavaScript c'è.
-    container.hidden = false;
+    // Il gruppo nasce nascosto. Se il browser non sa tenersi i video resta
+    // nascosto: una voce di menu che non fa niente è peggio di una che non c'è.
+    if (!window.indexedDB || !window.offlineDB) return;
+    group.hidden = false;
 
-    if (!window.indexedDB || !window.offlineDB) {
-        saveButton.disabled = true;
-        errorText.textContent = data.unsupported;
-        error.hidden = false;
-        return;
-    }
-
-    var running = null; // AbortController del download in corso
+    var idle = label.textContent;
+    var running = null; // AbortController del salvataggio in corso
 
     function formatBytes(bytes) {
         if (!bytes) return '0 B';
@@ -60,65 +58,59 @@
         return (value < 10 ? value.toFixed(1).replace(/\.0$/, '') : Math.round(value)) + ' ' + unit;
     }
 
-    function formatFor(itag) {
-        return data.formats.find(function (fmt) { return String(fmt.itag) === String(itag); });
-    }
-
     // ---------------------------------------------------------------------
-    // Stati del pannello
+    // Stati del menu
     // ---------------------------------------------------------------------
 
     function showIdle() {
+        group.hidden = false;
         progress.hidden = true;
         done.hidden = true;
         error.hidden = true;
-        saveButton.hidden = false;
-        saveButton.disabled = false;
-        select.disabled = false;
-        select.parentNode.hidden = false;
+        label.textContent = idle;
     }
 
-    // A cose fatte il selettore dei formati non serve più: quello che resta
-    // da decidere è se tenere il video o buttarlo.
+    // Un video alla volta: finché è in memoria le voci spariscono, e per
+    // cambiare qualità si toglie e si rifà. Tenerne due copie non servirebbe
+    // a niente se non a occupare il doppio.
     function showSaved(meta) {
+        group.hidden = true;
         progress.hidden = true;
         error.hidden = true;
-        saveButton.hidden = true;
-        select.parentNode.hidden = true;
         done.hidden = false;
         doneText.textContent = data.saved + ' · ' + meta.quality + ' · ' + formatBytes(meta.size);
+        label.textContent = idle;
     }
 
-    // Mentre scarica il pulsante sparisce invece di restare lì spento: quello
-    // che si può fare adesso è annullare, e c'è già il suo pulsante sotto.
     function showProgress(received, total) {
+        group.hidden = true;
         progress.hidden = false;
         done.hidden = true;
         error.hidden = true;
-        saveButton.hidden = true;
-        select.disabled = true;
-        cancelButton.hidden = false;
 
         var percent = total ? Math.min(100, Math.round(received / total * 100)) : null;
 
         bar.style.setProperty('--offline-progress', percent === null ? '100%' : percent + '%');
         bar.classList.toggle('offline-bar--unknown', percent === null);
-        if (percent === null)
+
+        if (percent === null) {
             bar.removeAttribute('aria-valuenow');
-        else
+        } else {
             bar.setAttribute('aria-valuenow', percent);
+            // Anche a tendina chiusa si deve vedere che sta lavorando.
+            label.textContent = idle + ' · ' + percent + '%';
+        }
 
         status.textContent = data.saving + ' ' + formatBytes(received) +
             (total ? ' / ' + formatBytes(total) : '');
     }
 
     function showError(message) {
+        group.hidden = false;
         progress.hidden = true;
         done.hidden = true;
         error.hidden = false;
-        saveButton.hidden = false;
-        saveButton.disabled = false;
-        select.disabled = false;
+        label.textContent = idle;
         bar.style.setProperty('--offline-progress', '0%');
         errorText.textContent = data.failed + (message ? ' (' + message + ')' : '');
     }
@@ -135,10 +127,7 @@
             .catch(function () { return null; });
     }
 
-    function save() {
-        var format = formatFor(select.value);
-        if (!format) return;
-
+    function save(format) {
         running = new AbortController();
         showProgress(0, format.size);
 
@@ -148,7 +137,7 @@
             '&itag=' + encodeURIComponent(format.itag) + '&local=true';
 
         // Lo spazio va chiesto prima di riempirlo: senza, il browser può
-        // buttare via il download quando la memoria stringe.
+        // buttare via il salvataggio quando la memoria stringe.
         window.offlineDB.persist()
             .then(function () {
                 return Promise.all([
@@ -163,7 +152,6 @@
             })
             .then(function (results) {
                 var blob = results[0];
-                var thumb = results[1];
 
                 var meta = {
                     id: data.id,
@@ -178,7 +166,7 @@
                     mime: format.mime,
                     size: blob.size,
                     savedAt: Date.now(),
-                    thumb: thumb
+                    thumb: results[1]
                 };
 
                 return window.offlineDB.put(meta, blob).then(function () { return meta; });
@@ -187,17 +175,25 @@
                 running = null;
                 showSaved(meta);
             })
-            .catch(function (error) {
+            .catch(function (err) {
                 running = null;
-                if (error && error.name === 'AbortError') {
+                if (err && err.name === 'AbortError') {
                     showIdle();
                     return;
                 }
-                showError(error && error.message);
+                showError(err && err.message);
             });
     }
 
-    saveButton.addEventListener('click', save);
+    group.querySelectorAll('[data-offline-itag]').forEach(function (item) {
+        item.addEventListener('click', function () {
+            var itag = item.getAttribute('data-offline-itag');
+            var format = data.formats.find(function (fmt) {
+                return String(fmt.itag) === itag;
+            });
+            if (format) save(format);
+        });
+    });
 
     cancelButton.addEventListener('click', function () {
         if (running) running.abort();
@@ -208,8 +204,8 @@
         window.offlineDB.remove(data.id).then(showIdle);
     });
 
-    // Il pannello deve dire la verità appena si apre la pagina: se il video
-    // è già in memoria, si offre di toglierlo, non di riscaricarlo.
+    // Il menu deve dire la verità appena si apre la pagina: se il video è già
+    // in memoria, si offre di toglierlo, non di riscaricarlo.
     window.offlineDB.get(data.id).then(function (meta) {
         if (meta) showSaved(meta);
     }).catch(function () {});

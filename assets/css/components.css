@@ -1471,6 +1471,144 @@
   text-decoration: none;
 }
 
+
+/* ==========================================================================
+ * Menu a tendina
+ *
+ * Un <details> che invece di spingere in basso la pagina si apre sopra, con
+ * l'ancora nel pulsante che lo comanda. È un <details> e non un pulsante
+ * pilotato dal JavaScript perché così si apre anche a JavaScript spento:
+ * quello che il JavaScript aggiunge — chiudere quando premi altrove o premi
+ * Esc — sta in handlers.js ed è un di più, non il minimo per funzionare.
+ *
+ * Le voci parlano la stessa lingua dei menu del lettore (.iv-panel-item):
+ * etichetta a sinistra, dettaglio a destra, riga intera cliccabile.
+ * ========================================================================== */
+.menu {
+  position: relative;
+}
+
+.menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.menu > summary::-webkit-details-marker,
+.menu > summary::marker {
+  display: none;
+}
+
+.menu__pop {
+  position: absolute;
+  inset-block-start: calc(100% + var(--s-2));
+  inset-inline-end: 0;
+  z-index: 30;
+  width: min(320px, calc(100vw - 2 * var(--s-5)));
+  max-height: min(60vh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  /* Come i pannelli del lettore: l'ombra è quello che stacca la tendina da
+     quello che le sta sotto, e non c'è un token che la dica. */
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+  scrollbar-width: thin;
+}
+
+/* Su uno schermo stretto il pulsante può finire ovunque nella riga, e una
+   tendina ancorata a lui uscirebbe dallo schermo da un lato o dall'altro.
+   Lì smette di essere una tendina e diventa un foglio in fondo al vetro,
+   che è anche il gesto che ci si aspetta sul telefono. */
+@media (max-width: 700px) {
+  .menu__pop {
+    position: fixed;
+    inset-block-start: auto;
+    inset-block-end: var(--s-4);
+    inset-inline: var(--s-4);
+    width: auto;
+    max-height: 70vh;
+  }
+}
+
+.menu__group + .menu__group {
+  margin-block-start: 5px;
+  padding-block-start: 5px;
+  border-block-start: 1px solid var(--line-soft);
+}
+
+.menu__title {
+  margin: 0;
+  padding: 10px 10px 5px;
+  font-family: var(--font-display);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--r-ctrl);
+  background: none;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  text-align: start;
+  cursor: pointer;
+}
+.menu__item:hover {
+  background: var(--surface-hi);
+  color: var(--accent-text);
+}
+
+/* L'etichetta si accorcia, il dettaglio no: è la parte che distingue una
+   voce dall'altra quando le etichette si somigliano. */
+.menu__item > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu__meta {
+  flex: none;
+  font-size: var(--t-xs);
+  color: var(--text-3);
+}
+
+/* Avanzamento ed esito stanno in fondo al menu, sotto le voci. La barra e
+   l'avviso prendono tutta la larghezza — un avviso stretto quanto il suo
+   testo manda a capo tre parole su quattro — mentre i pulsanti restano
+   larghi quanto la loro etichetta. */
+.menu__state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-block-start: 5px;
+  padding: var(--s-3) 10px 6px;
+  border-block-start: 1px solid var(--line-soft);
+}
+
+.menu__state > .btn {
+  align-self: flex-start;
+}
+
+/* Dentro una tendina larga trecento pixel l'avviso deve stringersi, o i due
+   pulsanti in fondo non ci stanno più su una riga sola. */
+.menu__state .notice {
+  padding: var(--s-3);
+}
+
 /* ==========================================================================
  * Offline
  *
@@ -1483,19 +1621,6 @@
   color: var(--text-2);
   margin: 0;
   font-variant-numeric: tabular-nums;
-}
-
-.offline-save__progress {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  align-items: flex-start;
-}
-
-.offline-save__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
 }
 
 /* La barra di avanzamento. La percentuale arriva da --offline-progress, che
