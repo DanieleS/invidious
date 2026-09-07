@@ -42,6 +42,7 @@ var SHELL = [
     '/css/components.css',
     '/js/_helpers.js',
     '/js/handlers.js',
+    '/js/theme_boot.js',
     '/js/themes.js',
     '/js/pwa.js',
     '/js/offline_db.js',
