@@ -55,10 +55,12 @@ module Invidious::Routes::BeforeAll
       "manifest-src 'self'",
       "media-src 'self' blob: " + COMPANION_CSP.companion_urls,
       "child-src 'self' blob:",
-      # Il service worker. Senza questa riga varrebbe il ripiego su child-src,
-      # che oggi dice la stessa cosa: meglio scriverlo, così non dipende da
-      # una regola che qualcuno potrebbe stringere domani.
-      "worker-src 'self'",
+      # Il service worker, e i worker che video.js si costruisce da un blob per
+      # rimontare i segmenti DASH/HLS: senza blob: il lettore resta a 0:00 per
+      # sempre. Prima questa riga non c'era e valeva il ripiego su child-src,
+      # che blob: lo permette: scriverla senza blob: era una stretta, non una
+      # copia.
+      "worker-src 'self' blob:",
       "frame-src 'self'",
       "frame-ancestors " + frame_ancestors,
     }.join("; ")
