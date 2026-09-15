@@ -566,5 +566,15 @@
     "preferences_dearrow_label": "DeArrow: ",
     "preferences_dearrow_description": "Show the titles and thumbnails other viewers submitted to DeArrow in place of the ones the uploader chose. The lookup is made by this instance: neither your address nor the video ID reaches the DeArrow server.",
     "preferences_dearrow_titles_label": "Replace titles",
-    "preferences_dearrow_thumbnails_label": "Replace thumbnails"
+    "preferences_dearrow_thumbnails_label": "Replace thumbnails",
+    "preferences_sponsorblock_highlight_label": "Offer to jump to the highlight: ",
+    "preferences_sponsorblock_chapters_label": "Use SponsorBlock chapters: ",
+    "preferences_sponsorblock_chapters_description": "Chapter names written by other viewers, used in place of the ones guessed from the description.",
+    "preferences_sponsorblock_labels_label": "Show full-video labels: ",
+    "preferences_sponsorblock_labels_description": "Marks a video that is an advert from beginning to end. Costs one more request to the SponsorBlock server.",
+    "sponsorblock_highlight": "Highlight further on",
+    "sponsorblock_highlight_go": "Jump there",
+    "sponsorblock_label_sponsor": "This whole video is a sponsorship",
+    "sponsorblock_label_selfpromo": "This whole video is self-promotion",
+    "sponsorblock_label_exclusive_access": "The author got exclusive access or a free product"
 }

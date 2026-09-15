@@ -149,6 +149,14 @@ we're going to need to do it here in order to allow for translations.
         <div>
             <h1 class="vtitle"><%= title %></h1>
 
+            <%- # SponsorBlock può dire che un video è pubblicità dal primo
+                # all'ultimo minuto: non c'è niente da saltare, c'è da saperlo
+                # prima di guardarlo. Il riquadro nasce vuoto e nascosto, lo
+                # riempie il lettore quando la risposta arriva. -%>
+            <% if params.sponsorblock && params.sponsorblock_labels %>
+                <div id="sponsorblock-label" class="sb-label" hidden></div>
+            <% end %>
+
             <p class="vstats">
                 <span id="views"><svg class="icon icon--sm"><use href="#i-eye"/></svg> <span class="num"><%= number_with_separator(video.views) %></span></span>
                 <span>·</span>

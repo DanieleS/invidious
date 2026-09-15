@@ -30,6 +30,9 @@ module Invidious::Videos
     property save_player_pos : Bool
     property sponsorblock : Bool
     property sponsorblock_categories : Array(String)
+    property sponsorblock_highlight : Bool
+    property sponsorblock_chapters : Bool
+    property sponsorblock_labels : Bool
   end
 
   def process_video_params(query, preferences)
@@ -55,6 +58,9 @@ module Invidious::Videos
     save_player_pos = query["save_player_pos"]?.try { |q| (q == "true" || q == "1").to_unsafe }
     sponsorblock = query["sponsorblock"]?.try { |q| (q == "true" || q == "1").to_unsafe }
     sponsorblock_categories = query["sponsorblock_categories"]?.try &.split(",").map(&.strip.downcase)
+    sponsorblock_highlight = query["sponsorblock_highlight"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+    sponsorblock_chapters = query["sponsorblock_chapters"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+    sponsorblock_labels = query["sponsorblock_labels"]?.try { |q| (q == "true" || q == "1").to_unsafe }
 
     if preferences
       # region ||= preferences.region
@@ -79,6 +85,9 @@ module Invidious::Videos
       save_player_pos ||= preferences.save_player_pos.to_unsafe
       sponsorblock ||= preferences.sponsorblock.to_unsafe
       sponsorblock_categories ||= preferences.sponsorblock_categories
+      sponsorblock_highlight ||= preferences.sponsorblock_highlight.to_unsafe
+      sponsorblock_chapters ||= preferences.sponsorblock_chapters.to_unsafe
+      sponsorblock_labels ||= preferences.sponsorblock_labels.to_unsafe
     end
 
     annotations ||= CONFIG.default_user_preferences.annotations.to_unsafe
@@ -102,6 +111,9 @@ module Invidious::Videos
     save_player_pos ||= CONFIG.default_user_preferences.save_player_pos.to_unsafe
     sponsorblock ||= CONFIG.default_user_preferences.sponsorblock.to_unsafe
     sponsorblock_categories ||= CONFIG.default_user_preferences.sponsorblock_categories
+    sponsorblock_highlight ||= CONFIG.default_user_preferences.sponsorblock_highlight.to_unsafe
+    sponsorblock_chapters ||= CONFIG.default_user_preferences.sponsorblock_chapters.to_unsafe
+    sponsorblock_labels ||= CONFIG.default_user_preferences.sponsorblock_labels.to_unsafe
 
     annotations = annotations == 1
     preload = preload == 1
@@ -116,6 +128,9 @@ module Invidious::Videos
     vr_mode = vr_mode == 1
     save_player_pos = save_player_pos == 1
     sponsorblock = (sponsorblock == 1) && CONFIG.sponsorblock.enabled
+    sponsorblock_highlight = sponsorblock_highlight == 1
+    sponsorblock_chapters = sponsorblock_chapters == 1
+    sponsorblock_labels = sponsorblock_labels == 1
 
     # A category the instance doesn't know about can only come from a
     # hand-written URL or an old preferences cookie: drop it here rather than
@@ -178,6 +193,9 @@ module Invidious::Videos
 
       sponsorblock:            sponsorblock,
       sponsorblock_categories: sponsorblock_categories,
+      sponsorblock_highlight:  sponsorblock_highlight,
+      sponsorblock_chapters:   sponsorblock_chapters,
+      sponsorblock_labels:     sponsorblock_labels,
     })
 
     return params

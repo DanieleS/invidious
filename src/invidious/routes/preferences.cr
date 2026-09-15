@@ -176,6 +176,17 @@ module Invidious::Routes::PreferencesRoute
       saved = env.get?("preferences").try(&.as(Preferences).dearrow_thumbnails)
       dearrow_thumbnails = saved.nil? ? CONFIG.default_user_preferences.dearrow_thumbnails : saved
     end
+    sponsorblock_highlight = env.params.body["sponsorblock_highlight"]?.try &.as(String)
+    sponsorblock_highlight ||= "off"
+    sponsorblock_highlight = sponsorblock_highlight == "on"
+
+    sponsorblock_chapters = env.params.body["sponsorblock_chapters"]?.try &.as(String)
+    sponsorblock_chapters ||= "off"
+    sponsorblock_chapters = sponsorblock_chapters == "on"
+
+    sponsorblock_labels = env.params.body["sponsorblock_labels"]?.try &.as(String)
+    sponsorblock_labels ||= "off"
+    sponsorblock_labels = sponsorblock_labels == "on"
 
     # Convert to JSON and back again to take advantage of converters used for compatibility
     preferences = Preferences.from_json({
@@ -220,6 +231,9 @@ module Invidious::Routes::PreferencesRoute
       dearrow:                     dearrow,
       dearrow_titles:              dearrow_titles,
       dearrow_thumbnails:          dearrow_thumbnails,
+      sponsorblock_highlight:      sponsorblock_highlight,
+      sponsorblock_chapters:       sponsorblock_chapters,
+      sponsorblock_labels:         sponsorblock_labels,
     }.to_json)
 
     if user = env.get? "user"

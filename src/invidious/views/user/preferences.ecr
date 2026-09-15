@@ -142,6 +142,27 @@
                         <input name="sponsorblock_categories[<%= category %>]" id="sponsorblock_categories[<%= category %>]" type="checkbox" <% if preferences.sponsorblock_categories.includes?(category) %>checked<% end %>>
                     </div>
                 <% end %>
+
+                <%- # Le altre tre cose che l'archivio tiene, che non sono
+                    # tratti da saltare: il punto in cui il video entra nel
+                    # merito, i capitoli scritti a mano, e il bollino per un
+                    # video che è pubblicità dall'inizio alla fine. -%>
+                <div class="field field--check">
+                    <label for="sponsorblock_highlight"><%= I18n.translate(locale, "preferences_sponsorblock_highlight_label") %></label>
+                    <input name="sponsorblock_highlight" id="sponsorblock_highlight" type="checkbox" <% if preferences.sponsorblock_highlight %>checked<% end %>>
+                </div>
+
+                <div class="field field--check">
+                    <label for="sponsorblock_chapters"><%= I18n.translate(locale, "preferences_sponsorblock_chapters_label") %></label>
+                    <input name="sponsorblock_chapters" id="sponsorblock_chapters" type="checkbox" <% if preferences.sponsorblock_chapters %>checked<% end %>>
+                    <span class="preference-description"><%= I18n.translate(locale, "preferences_sponsorblock_chapters_description") %></span>
+                </div>
+
+                <div class="field field--check">
+                    <label for="sponsorblock_labels"><%= I18n.translate(locale, "preferences_sponsorblock_labels_label") %></label>
+                    <input name="sponsorblock_labels" id="sponsorblock_labels" type="checkbox" <% if preferences.sponsorblock_labels %>checked<% end %>>
+                    <span class="preference-description"><%= I18n.translate(locale, "preferences_sponsorblock_labels_description") %></span>
+                </div>
             <% end %>
 
             <%- # DeArrow, sempre in sola lettura: titoli e anteprime scelti da

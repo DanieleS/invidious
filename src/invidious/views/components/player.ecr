@@ -97,11 +97,18 @@
     "sponsorblock" => {
         "enabled" => params.sponsorblock,
         "categories" => params.sponsorblock_categories,
+        "highlight" => params.sponsorblock_highlight,
+        "chapters" => params.sponsorblock_chapters,
+        "video_labels" => params.sponsorblock_labels,
         "skipped_text" => I18n.translate(locale, "sponsorblock_skipped"),
         "muted_text" => I18n.translate(locale, "sponsorblock_muted"),
         "undo_text" => I18n.translate(locale, "sponsorblock_undo"),
+        "highlight_text" => I18n.translate(locale, "sponsorblock_highlight"),
+        "highlight_go_text" => I18n.translate(locale, "sponsorblock_highlight_go"),
         "labels" => Invidious::Videos::SponsorBlock::CATEGORIES
-            .to_h { |category| {category, I18n.translate(locale, "sponsorblock_category_" + category)} }
+            .to_h { |category| {category, I18n.translate(locale, "sponsorblock_category_" + category)} },
+        "video_label_texts" => Invidious::Videos::SponsorBlock::LABEL_CATEGORIES
+            .to_h { |category| {category, I18n.translate(locale, "sponsorblock_label_" + category)} }
     }
 }.to_pretty_json
 %>

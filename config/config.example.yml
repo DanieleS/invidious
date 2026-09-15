@@ -1214,6 +1214,36 @@ default_user_preferences:
   #dearrow_titles: true
   #dearrow_thumbnails: true
 
+  ##
+  ## Offer to jump to the "highlight": the point where a video gets to
+  ## the matter, as marked on SponsorBlock. It is an offer, never a jump
+  ## made on the viewer's behalf.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #sponsorblock_highlight: true
+
+  ##
+  ## Use the chapter names written on SponsorBlock, in place of the ones
+  ## Invidious guesses from the video description.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #sponsorblock_chapters: true
+
+  ##
+  ## Show a label on videos that are an advert from beginning to end.
+  ##
+  ## Note: this costs a second request to the SponsorBlock server per
+  ## video, cached like the first one.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #sponsorblock_labels: true
+
   # -----------------------------
   #  Subscription feed
   # -----------------------------

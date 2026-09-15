@@ -833,6 +833,13 @@ videojs.registerComponent('IvChapterDisplay', IvChapterDisplay);
 
 var IV_SB = {
     segments: [],
+    // Quello che si dipinge sulla barra: i tratti più, se c'è, il momento
+    // clou. Il momento clou non è un tratto da saltare, quindi sta fuori da
+    // `segments`, ma sulla barra ci va comunque.
+    marks: [],
+    // Il punto in cui il video entra nel merito, se qualcuno l'ha segnato.
+    highlight: null,
+    highlight_offered: false,
     // I tratti già saltati, per UUID: da lì in poi si guardano.
     seen: {},
     // Il tratto che stiamo silenziando adesso, e com'era l'audio prima.
@@ -841,7 +848,9 @@ var IV_SB = {
     // Alzata mentre siamo noi a togliere l'audio, così il riscontro del
     // volume non annuncia un muto che non ha chiesto nessuno.
     internal_mute: false,
-    notice_timer: null
+    notice_timer: null,
+    chapter_paint_bound: false,
+    chapters_from_sb: false
 };
 
 /** Il nome leggibile di una categoria, con il codice come ripiego. */
@@ -857,9 +866,10 @@ function iv_sb_label(category) {
  * poterci cliccare sopra.
  *
  * @param {String} text
- * @param {Function|null} undo Cosa fare se si torna indietro; niente rimando se manca.
+ * @param {String|null} action_text Cosa c'è scritto sul pulsante.
+ * @param {Function|null} action Cosa fa; senza, il cartellino è di sola lettura.
  */
-function iv_sb_notice(text, undo) {
+function iv_sb_notice(text, action_text, action) {
     var root = player.el();
     if (!root) return;
 
@@ -876,14 +886,14 @@ function iv_sb_notice(text, undo) {
     label.textContent = text;
     el.appendChild(label);
 
-    if (undo) {
+    if (action) {
         var button = document.createElement('button');
         button.type = 'button';
         button.className = 'iv-sb-undo';
-        button.textContent = (player_data.sponsorblock || {}).undo_text || 'Undo';
+        button.textContent = action_text || '';
         button.addEventListener('click', function () {
             iv_sb_hide_notice();
-            undo();
+            action();
         });
         el.appendChild(button);
     }
@@ -915,7 +925,7 @@ function iv_sb_paint() {
     var marks = holder.querySelector('.iv-sb-marks');
     var duration = player.duration();
 
-    if (!IV_SB.segments.length || !duration || !isFinite(duration)) {
+    if (!IV_SB.marks.length || !duration || !isFinite(duration)) {
         if (marks) marks.parentNode.removeChild(marks);
         return;
     }
@@ -928,7 +938,7 @@ function iv_sb_paint() {
 
     marks.textContent = '';
 
-    IV_SB.segments.forEach(function (seg) {
+    IV_SB.marks.forEach(function (seg) {
         var left = seg.start / duration * 100;
         if (left >= 100) return;
 
@@ -956,7 +966,11 @@ function iv_sb_skip(seg) {
     var text = ((player_data.sponsorblock || {}).skipped_text || '{category}')
         .replace('{category}', iv_sb_label(seg.category));
 
-    iv_sb_notice(text, function () { player.currentTime(seg.start); });
+    iv_sb_notice(
+        text,
+        (player_data.sponsorblock || {}).undo_text || 'Undo',
+        function () { player.currentTime(seg.start); }
+    );
 }
 
 /**
@@ -980,7 +994,7 @@ function iv_sb_mute(seg) {
 
         var text = ((player_data.sponsorblock || {}).muted_text || '{category}')
             .replace('{category}', iv_sb_label(seg.category));
-        iv_sb_notice(text, null);
+        iv_sb_notice(text, null, null);
         return;
     }
 
@@ -1019,22 +1033,111 @@ function iv_sb_tick() {
     iv_sb_mute(muting);
 }
 
+/**
+ * Sostituisce i capitoli con quelli scritti a mano su SponsorBlock.
+ *
+ * Quelli che ricaviamo dalla descrizione sono un'ipotesi: righe che
+ * *sembrano* un indice. Questi invece qualcuno li ha scritti apposta, quindi
+ * quando ci sono prendono il posto degli altri, barra e pannello compresi.
+ *
+ * @param {Array<{title: String, startTime: Number}>} list
+ */
+function iv_sb_apply_chapters(list) {
+    if (!list || !list.length) return;
+
+    IV_CHAPTERS = list.map(function (chapter) {
+        return { time: chapter.startTime, title: chapter.title };
+    });
+    IV_SB.chapters_from_sb = true;
+
+    iv_paint_chapter_marks();
+
+    if (!IV_SB.chapter_paint_bound) {
+        player.on(['durationchange', 'loadedmetadata'], iv_paint_chapter_marks);
+        IV_SB.chapter_paint_bound = true;
+    }
+
+    // Il nome in plancia tiene in memoria il capitolo che sta mostrando per
+    // non riscriverlo a ogni istante: senza azzerare quella memoria, resta
+    // indietro di un indice.
+    var control_bar = player.getChild('controlBar');
+    var display = control_bar && control_bar.getChild('IvChapterDisplay');
+    if (display) {
+        display.shown_ = -2;
+        display.update();
+    }
+}
+
+/**
+ * Offre il salto al punto in cui il video entra nel merito.
+ *
+ * Si propone una volta sola, all'avvio, e solo se si è ancora prima di quel
+ * punto: dopo non servirebbe a niente. È un'offerta, non un salto: a
+ * differenza della pubblicità, qui in mezzo c'è del video vero, e decidere al
+ * posto di chi guarda sarebbe troppo.
+ */
+function iv_sb_offer_highlight() {
+    var cfg = player_data.sponsorblock || {};
+    var highlight = IV_SB.highlight;
+    if (!highlight) return;
+
+    function offer() {
+        if (IV_SB.highlight_offered) return;
+        if (player.currentTime() >= highlight.start - 1) return;
+
+        IV_SB.highlight_offered = true;
+        iv_sb_notice(
+            cfg.highlight_text || '',
+            cfg.highlight_go_text || '',
+            function () { player.currentTime(highlight.start); }
+        );
+    }
+
+    if (player.paused()) player.one('play', offer);
+    else offer();
+}
+
+/**
+ * Scrive il bollino del video interamente pubblicitario, se la pagina ha il
+ * posto dove metterlo (l'incorporamento non ce l'ha).
+ *
+ * @param {String|null} category
+ */
+function iv_sb_show_label(category) {
+    if (!category) return;
+
+    var box = document.getElementById('sponsorblock-label');
+    if (!box) return;
+
+    var texts = (player_data.sponsorblock || {}).video_label_texts || {};
+    box.textContent = texts[category] || category;
+    box.hidden = false;
+}
+
 /** Chiede l'elenco e, se c'è qualcosa, accende il resto. */
 function iv_sb_load() {
     var cfg = player_data.sponsorblock;
-    if (!cfg || !cfg.enabled || !cfg.categories || !cfg.categories.length) return;
+    if (!cfg || !cfg.enabled) return;
 
     // In diretta non c'è niente da saltare, e la durata cambia sotto i piedi.
     if (video_data.live_now) return;
 
+    var categories = cfg.categories || [];
+    if (!categories.length && !cfg.highlight && !cfg.chapters && !cfg.video_labels) return;
+
+    // Si chiede solo quello che si userà: il bollino, in particolare, costa al
+    // server una seconda richiesta là fuori.
     var url = '/api/v1/sponsorblock/' + encodeURIComponent(video_data.id) +
-        '?categories=' + encodeURIComponent(cfg.categories.join(','));
+        '?categories=' + encodeURIComponent(categories.join(','));
+    if (cfg.highlight) url += '&highlight=1';
+    if (cfg.chapters) url += '&chapters=1';
+    if (cfg.video_labels) url += '&label=1';
 
     helpers.xhr('GET', url, { responseType: 'json', timeout: 20000 }, {
         on200: function (response) {
-            var segments = (response && response.segments) || [];
+            if (!response) return;
 
-            IV_SB.segments = segments.map(function (seg) {
+            IV_SB.segments = (response.segments || []).map(function (seg) {
                 return {
                     uuid: seg.uuid,
                     category: seg.category,
@@ -1044,11 +1147,36 @@ function iv_sb_load() {
                 };
             });
 
-            if (!IV_SB.segments.length) return;
+            IV_SB.marks = IV_SB.segments.slice();
 
-            iv_sb_paint();
-            player.on(['durationchange', 'loadedmetadata'], iv_sb_paint);
-            player.on('timeupdate', iv_sb_tick);
+            if (response.highlight) {
+                IV_SB.highlight = {
+                    uuid: response.highlight.uuid,
+                    start: response.highlight.startTime
+                };
+
+                // Sulla barra è un punto, non un tratto: gli si dà inizio e
+                // fine uguali e ci pensa la larghezza minima a renderlo visibile.
+                IV_SB.marks.push({
+                    uuid: IV_SB.highlight.uuid,
+                    category: 'poi_highlight',
+                    action: 'poi',
+                    start: IV_SB.highlight.start,
+                    end: IV_SB.highlight.start
+                });
+            }
+
+            iv_sb_apply_chapters(response.chapters);
+            iv_sb_show_label(response.label);
+
+            if (IV_SB.marks.length) {
+                iv_sb_paint();
+                player.on(['durationchange', 'loadedmetadata'], iv_sb_paint);
+            }
+
+            if (IV_SB.segments.length) player.on('timeupdate', iv_sb_tick);
+
+            iv_sb_offer_highlight();
         }
     });
 }
@@ -1366,11 +1494,15 @@ player.one('playing', function () { player.setTimeout(iv_paint_icons, 0); });
 // da cui si leggono i capitoli sta sotto al lettore, e quando questo script
 // gira non è ancora stata disegnata.
 addEventListener('DOMContentLoaded', function () {
-    IV_CHAPTERS = iv_read_chapters();
+    // La risposta di SponsorBlock può arrivare prima di qui: se ha già portato
+    // dei capitoli scritti a mano, quelli che si indovinano dalla descrizione
+    // non li sostituiscono.
+    if (!IV_SB.chapters_from_sb) IV_CHAPTERS = iv_read_chapters();
 
     if (IV_CHAPTERS.length) {
         iv_paint_chapter_marks();
         player.on(['durationchange', 'loadedmetadata'], iv_paint_chapter_marks);
+        IV_SB.chapter_paint_bound = true;
 
         var chapter_display = player.getChild('controlBar').getChild('IvChapterDisplay');
         if (chapter_display) chapter_display.update();

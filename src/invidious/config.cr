@@ -63,6 +63,12 @@ struct ConfigPreferences
   property dearrow : Bool = true
   property dearrow_titles : Bool = true
   property dearrow_thumbnails : Bool = true
+  # The three things SponsorBlock holds besides the segments to skip: the
+  # point where the video gets to the matter, the hand-written chapters, and
+  # the label for a video that is an advert from beginning to end.
+  property sponsorblock_highlight : Bool = true
+  property sponsorblock_chapters : Bool = true
+  property sponsorblock_labels : Bool = true
   @[YAML::Field(ignore: true)]
   property default_playlist : String? = nil
   property search_privacy : Bool = false

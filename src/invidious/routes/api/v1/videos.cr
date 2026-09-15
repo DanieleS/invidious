@@ -326,7 +326,14 @@ module Invidious::Routes::API::V1::Videos
   # SponsorBlock server never sees the viewer.
   #
   # Answers `{"videoId": ..., "segments": [...]}`, with an empty list when
-  # nobody has marked anything in this video yet.
+  # nobody has marked anything in this video yet. The other three things the
+  # database holds are only sent when asked for, because each costs work that
+  # a client which ignores them shouldn't pay:
+  #
+  #   * `highlight=1` adds the point where the video gets to the matter;
+  #   * `chapters=1` adds the hand-written chapters;
+  #   * `label=1` adds the full-video label, and needs a second request
+  #     upstream.
   def self.sponsorblock(env)
     env.response.content_type = "application/json"
 
@@ -342,8 +349,13 @@ module Invidious::Routes::API::V1::Videos
     categories = env.params.query["categories"]?.try &.split(",").map(&.strip.downcase)
     categories ||= CONFIG.default_user_preferences.sponsorblock_categories
 
+    want_highlight = env.params.query["highlight"]? == "1"
+    want_chapters = env.params.query["chapters"]? == "1"
+    want_label = env.params.query["label"]? == "1"
+
     begin
-      segments = IV::Videos::SponsorBlock.segments(id, categories)
+      segments = IV::Videos::SponsorBlock.lookup(id)
+      label = want_label ? IV::Videos::SponsorBlock.label(id) : nil
     rescue ex
       haltf env, 502, error_json(502, ex)
     end
@@ -353,9 +365,10 @@ module Invidious::Routes::API::V1::Videos
     JSON.build do |json|
       json.object do
         json.field "videoId", id
+
         json.field "segments" do
           json.array do
-            segments.each do |segment|
+            IV::Videos::SponsorBlock.skips(segments, categories).each do |segment|
               json.object do
                 json.field "uuid", segment.uuid
                 json.field "category", segment.category
@@ -368,6 +381,38 @@ module Invidious::Routes::API::V1::Videos
             end
           end
         end
+
+        if want_highlight
+          highlight = IV::Videos::SponsorBlock.highlight(segments)
+
+          json.field "highlight" do
+            if highlight.nil?
+              json.null
+            else
+              json.object do
+                json.field "uuid", highlight.uuid
+                json.field "startTime", highlight.start_time
+              end
+            end
+          end
+        end
+
+        if want_chapters
+          json.field "chapters" do
+            json.array do
+              IV::Videos::SponsorBlock.chapters(segments).each do |chapter|
+                json.object do
+                  json.field "uuid", chapter.uuid
+                  json.field "title", chapter.description
+                  json.field "startTime", chapter.start_time
+                  json.field "endTime", chapter.end_time
+                end
+              end
+            end
+          end
+        end
+
+        json.field "label", label if want_label
       end
     end
   end
