@@ -335,8 +335,8 @@ module Invidious::Routes::API::V1::Videos
     end
 
     id = env.params.url["id"]
-    if !id.matches?(/^[a-zA-Z0-9_-]{11}$/)
-      haltf env, 400, error_json(400, "Invalid video ID")
+    if !validate_video_id(id)
+      haltf env, 400, error_json(400, InvalidVideoID.new(id))
     end
 
     categories = env.params.query["categories"]?.try &.split(",").map(&.strip.downcase)
