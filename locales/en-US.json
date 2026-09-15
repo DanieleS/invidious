@@ -562,5 +562,9 @@
     "sponsorblock_category_music_offtopic": "Non-music section",
     "sponsorblock_skipped": "Skipped: {category}",
     "sponsorblock_muted": "Muted: {category}",
-    "sponsorblock_undo": "Undo"
+    "sponsorblock_undo": "Undo",
+    "preferences_dearrow_label": "DeArrow: ",
+    "preferences_dearrow_description": "Show the titles and thumbnails other viewers submitted to DeArrow in place of the ones the uploader chose. The lookup is made by this instance: neither your address nor the video ID reaches the DeArrow server.",
+    "preferences_dearrow_titles_label": "Replace titles",
+    "preferences_dearrow_thumbnails_label": "Replace thumbnails"
 }

@@ -569,5 +569,9 @@
     "sponsorblock_category_music_offtopic": "Parti non musicali",
     "sponsorblock_skipped": "Saltato: {category}",
     "sponsorblock_muted": "Muto: {category}",
-    "sponsorblock_undo": "Annulla"
+    "sponsorblock_undo": "Annulla",
+    "preferences_dearrow_label": "DeArrow: ",
+    "preferences_dearrow_description": "Mostra i titoli e le anteprime che altri hanno proposto su DeArrow al posto di quelli scelti da chi ha caricato il video. La richiesta la fa questo server: né il tuo indirizzo né il codice del video arrivano a DeArrow.",
+    "preferences_dearrow_titles_label": "Sostituisci i titoli",
+    "preferences_dearrow_thumbnails_label": "Sostituisci le anteprime"
 }

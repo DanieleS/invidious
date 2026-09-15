@@ -159,6 +159,24 @@ module Invidious::Routes::PreferencesRoute
       sponsorblock_categories << category
     end
 
+    dearrow = env.params.body["dearrow"]?.try &.as(String)
+    dearrow ||= "off"
+    dearrow = dearrow == "on"
+
+    dearrow_titles = env.params.body["dearrow_titles"]?.try &.as(String)
+    dearrow_titles ||= "off"
+    dearrow_titles = dearrow_titles == "on"
+
+    # The thumbnail checkbox isn't drawn when the instance has that half of
+    # DeArrow turned off; without this, saving the preferences page would then
+    # quietly clear whatever the user had chosen before.
+    if CONFIG.dearrow.thumbnails
+      dearrow_thumbnails = env.params.body["dearrow_thumbnails"]?.try(&.as(String)) == "on"
+    else
+      saved = env.get?("preferences").try(&.as(Preferences).dearrow_thumbnails)
+      dearrow_thumbnails = saved.nil? ? CONFIG.default_user_preferences.dearrow_thumbnails : saved
+    end
+
     # Convert to JSON and back again to take advantage of converters used for compatibility
     preferences = Preferences.from_json({
       annotations:                 annotations,
@@ -199,6 +217,9 @@ module Invidious::Routes::PreferencesRoute
       search_privacy:              search_privacy,
       sponsorblock:                sponsorblock,
       sponsorblock_categories:     sponsorblock_categories,
+      dearrow:                     dearrow,
+      dearrow_titles:              dearrow_titles,
+      dearrow_thumbnails:          dearrow_thumbnails,
     }.to_json)
 
     if user = env.get? "user"

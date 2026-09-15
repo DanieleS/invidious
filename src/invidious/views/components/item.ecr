@@ -112,12 +112,18 @@
             link_url = "/watch?v=#{item.id}"
             endpoint_params = "?v=#{item.id}"
           end
+
+          # DeArrow: titolo e anteprima scelti da chi guarda, se ci sono. Le
+          # ricerche sono già state fatte tutte insieme da chi disegna la
+          # lista, qui si legge solo quello che è arrivato in tempo.
+          item_title = IV::Frontend::DeArrow.title(env, item.id, item.title)
+          item_thumbnail = IV::Frontend::DeArrow.thumbnail(env, item.id, "/vi/#{item.id}/mqdefault.jpg")
         -%>
 
         <div style="position:relative">
             <%- if !thin_mode -%>
                 <a tabindex="-1" class="thumb" href="<%= link_url %>">
-                    <img loading="lazy" src="/vi/<%= item.id %>/mqdefault.jpg" alt="" />
+                    <img loading="lazy" src="<%= item_thumbnail %>" alt="" />
 
                     <% if item_watched %>
                         <span class="watched-overlay"></span>
@@ -171,7 +177,7 @@
 
         <div class="card__body">
             <div class="card__text">
-                <a href="<%= link_url %>"><h3 class="card__title" dir="auto"><%= HTML.escape(item.title) %></h3></a>
+                <a href="<%= link_url %>"><h3 class="card__title" dir="auto"><%= HTML.escape(item_title) %></h3></a>
 
                 <p class="card__by">
                     <% if !item.ucid.to_s.empty? %>

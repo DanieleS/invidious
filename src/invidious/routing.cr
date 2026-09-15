@@ -230,6 +230,7 @@ module Invidious::Routing
     get "/s_p/:id/:name", Routes::Images, :s_p_image
     get "/yts/img/:name", Routes::Images, :yts_image
     get "/vi/:id/:name", Routes::Images, :thumbnails
+    get "/dearrow/thumbnail/:id", Routes::Images, :dearrow_thumbnail
     get "/pl_c/:id/:name", Routes::Images, :pl_c_image
     get "/tvfilm_banner/:id/:name", Routes::Images, :tvfilm_banner_image
   end
@@ -256,6 +257,7 @@ module Invidious::Routing
       get "/api/v1/captions/:id", {{namespace}}::Videos, :captions
       get "/api/v1/annotations/:id", {{namespace}}::Videos, :annotations
       get "/api/v1/sponsorblock/:id", {{namespace}}::Videos, :sponsorblock
+      get "/api/v1/dearrow/:id", {{namespace}}::Videos, :dearrow
       get "/api/v1/comments/:id", {{namespace}}::Videos, :comments
       get "/api/v1/clips/:id", {{namespace}}::Videos, :clips
       get "/api/v1/transcripts/:id", {{namespace}}::Videos, :transcripts
