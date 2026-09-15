@@ -57,6 +57,12 @@ struct ConfigPreferences
   # category left out is neither skipped nor drawn on the progress bar.
   property sponsorblock : Bool = true
   property sponsorblock_categories : Array(String) = ["sponsor", "selfpromo", "interaction", "music_offtopic"]
+  # DeArrow: show the titles and thumbnails other viewers submitted in place
+  # of the uploader's. `dearrow` is the master switch, the other two say what
+  # gets replaced.
+  property dearrow : Bool = true
+  property dearrow_titles : Bool = true
+  property dearrow_thumbnails : Bool = true
   @[YAML::Field(ignore: true)]
   property default_playlist : String? = nil
   property search_privacy : Bool = false
@@ -244,6 +250,48 @@ class Config
     # How long an answer is kept in memory, in seconds. Segments change
     # slowly, and a popular video would otherwise be looked up once per view.
     property cache_ttl : Int32 = 300
+  end
+
+  # DeArrow lookups, proxied by the instance (see
+  # `src/invidious/videos/dearrow.cr`). Turning this off hides the feature
+  # from the preferences page and makes the API endpoint answer 403, whatever
+  # a user may have saved before.
+  property dearrow : DeArrowConfig = DeArrowConfig.from_yaml("")
+
+  struct DeArrowConfig
+    include YAML::Serializable
+
+    property enabled : Bool = true
+
+    # Any server speaking the DeArrow API; it is the same host as
+    # SponsorBlock's, and a self-hosted mirror works just as well.
+    @[YAML::Field(converter: Preferences::URIConverter)]
+    property server : URI = URI.parse("https://sponsor.ajay.app")
+
+    # Replacing thumbnails is a separate matter from replacing titles: the
+    # frames are rendered by another server and proxied by this instance, one
+    # request per card. Titles keep working with this off.
+    property thumbnails : Bool = true
+
+    # The DeArrow thumbnail cache, which renders the frames.
+    @[YAML::Field(converter: Preferences::URIConverter)]
+    property thumbnail_server : URI = URI.parse("https://dearrow-thumb.ajay.app")
+
+    # Whether to also replace the thumbnail of videos *nobody* submitted one
+    # for, with a frame the DeArrow server picks at random. That's what the
+    # browser extension does by default; on an instance it means rendering
+    # and proxying a frame for nearly every video ever shown, so here it is
+    # off unless asked for.
+    property random_thumbnails : Bool = false
+
+    # How long an answer is kept in memory, in seconds. Titles change slowly,
+    # and a listing page would otherwise look up twenty videos per view.
+    property cache_ttl : Int32 = 900
+
+    # How long a page may wait for the lookups it needs, in milliseconds.
+    # Past that, it is drawn with the titles YouTube gave; the answers that
+    # arrive late are still cached, and the next load has them.
+    property timeout : Int32 = 1500
   end
 
   property videojs : VideoJSConfig = VideoJSConfig.from_yaml("")

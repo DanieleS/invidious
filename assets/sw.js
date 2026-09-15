@@ -62,6 +62,7 @@ var BYPASS = [
     '/companion/',
     '/download',
     '/vi/',
+    '/dearrow/',
     '/sb/',
     '/ggpht/',
     '/s_p/',

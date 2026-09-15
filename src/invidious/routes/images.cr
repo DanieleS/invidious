@@ -144,7 +144,68 @@ module Invidious::Routes::Images
     end
   end
 
-  private def self.proxy_image(env, response)
+  # DeArrow thumbnails: a frame of the video itself, picked by the crowd and
+  # rendered by the DeArrow thumbnail cache. Proxied like every other image,
+  # so that server never sees the viewer either.
+  #
+  # A frame that hasn't been rendered yet is answered with a 204 rather than
+  # an image. Instead of leaving a hole in the page we serve YouTube's
+  # thumbnail, and tell the browser to come back soon: by then the DeArrow
+  # one is usually ready.
+  def self.dearrow_thumbnail(env)
+    id = env.params.url["id"]
+    if !validate_video_id(id)
+      haltf env, 400, ""
+    end
+
+    time = env.params.query["time"]?.try &.to_f?
+
+    if CONFIG.dearrow.enabled && CONFIG.dearrow.thumbnails && time && time >= 0
+      server = CONFIG.dearrow.thumbnail_server
+
+      params = URI::Params.build do |form|
+        form.add("videoID", id)
+        form.add("time", time.to_s)
+      end
+
+      begin
+        make_client(server) do |client|
+          client.get("#{server.request_target.rchop('/')}/api/v1/getThumbnail?#{params}") do |resp|
+            if resp.status_code == 200
+              cache_control = "public, max-age=#{CONFIG.dearrow.cache_ttl}"
+              return self.proxy_image(env, resp, cache_control: cache_control)
+            end
+          end
+        end
+      rescue ex
+        LOGGER.debug("DeArrow: thumbnail of #{id} at #{time}s failed: #{ex.message}")
+      end
+    end
+
+    self.dearrow_thumbnail_fallback(env, id)
+  end
+
+  private def self.dearrow_thumbnail_fallback(env, id : String)
+    headers = HTTP::Headers.new
+
+    REQUEST_HEADERS_WHITELIST.each do |header|
+      if env.request.headers[header]?
+        headers[header] = env.request.headers[header]
+      end
+    end
+
+    begin
+      get_ytimg_pool("i").client &.get("/vi/#{id}/mqdefault.jpg", headers) do |resp|
+        # Deliberately short: this is the picture we didn't want to show.
+        return self.proxy_image(env, resp, cache_control: "public, max-age=60")
+      end
+    rescue ex
+    end
+  end
+
+  # `cache_control`, when given, replaces whatever the upstream server had to
+  # say about caching.
+  private def self.proxy_image(env, response, cache_control : String? = nil)
     env.response.status_code = response.status_code
     response.headers.each do |key, value|
       if !RESPONSE_HEADERS_BLACKLIST.includes?(key.downcase)
@@ -152,6 +213,7 @@ module Invidious::Routes::Images
       end
     end
 
+    env.response.headers["Cache-Control"] = cache_control if cache_control
     env.response.headers["Access-Control-Allow-Origin"] = "*"
 
     if response.status_code >= 300

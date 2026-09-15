@@ -144,6 +144,30 @@
                 <% end %>
             <% end %>
 
+            <%- # DeArrow, sempre in sola lettura: titoli e anteprime scelti da
+                # chi guarda al posto di quelli di chi carica. Le due caselle
+                # sotto dicono *cosa* sostituire; l'interruttore sopra le
+                # accende tutte e due. -%>
+            <% if CONFIG.dearrow.enabled %>
+                <div class="field field--check">
+                    <label for="dearrow"><%= I18n.translate(locale, "preferences_dearrow_label") %></label>
+                    <input name="dearrow" id="dearrow" type="checkbox" <% if preferences.dearrow %>checked<% end %>>
+                    <span class="preference-description"><%= I18n.translate(locale, "preferences_dearrow_description") %></span>
+                </div>
+
+                <div class="field field--check field--sub">
+                    <label for="dearrow_titles"><%= I18n.translate(locale, "preferences_dearrow_titles_label") %></label>
+                    <input name="dearrow_titles" id="dearrow_titles" type="checkbox" <% if preferences.dearrow_titles %>checked<% end %>>
+                </div>
+
+                <% if CONFIG.dearrow.thumbnails %>
+                    <div class="field field--check field--sub">
+                        <label for="dearrow_thumbnails"><%= I18n.translate(locale, "preferences_dearrow_thumbnails_label") %></label>
+                        <input name="dearrow_thumbnails" id="dearrow_thumbnails" type="checkbox" <% if preferences.dearrow_thumbnails %>checked<% end %>>
+                    </div>
+                <% end %>
+            <% end %>
+
             <% if user = env.get?("user").try &.as(User) %>
                 <% playlists = Invidious::Database::Playlists.select_user_created_playlists(user.email) %>
                 <div class="field">

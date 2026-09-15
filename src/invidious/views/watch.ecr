@@ -1,5 +1,13 @@
 <% ucid = video.ucid %>
-<% title = HTML.escape(video.title) %>
+<%-
+  # DeArrow: una sola infornata di richieste per tutta la pagina, il video e i
+  # correlati insieme. Quello che non arriva in tempo resta come l'ha messo su
+  # chi ha caricato il video.
+  dearrow_ids = [video.id]
+  video.related_videos.each { |rv| rv["id"]?.try { |rv_id| dearrow_ids << rv_id } }
+  IV::Frontend::DeArrow.prefetch_videos(env, dearrow_ids)
+-%>
+<% title = HTML.escape(IV::Frontend::DeArrow.title(env, video.id, video.title)) %>
 <% author = HTML.escape(video.author) %>
 
 
@@ -348,7 +356,7 @@ we're going to need to do it here in order to allow for translations.
                             <div class="row">
                                 <%- if !env.get("preferences").as(Preferences).thin_mode -%>
                                     <a tabindex="-1" class="thumb" href="/watch?v=<%= rv["id"] %>&listen=<%= params.listen %>">
-                                        <img loading="lazy" src="/vi/<%= rv["id"] %>/mqdefault.jpg" alt="" />
+                                        <img loading="lazy" src="<%= IV::Frontend::DeArrow.thumbnail(env, rv["id"], "/vi/#{rv["id"]}/mqdefault.jpg") %>" alt="" />
                                         <%- if (length_seconds = rv["length_seconds"]?.try &.to_i?) && length_seconds != 0 -%>
                                             <span class="stamp length"><%= recode_length_seconds(length_seconds) %></span>
                                         <%- end -%>
@@ -359,7 +367,7 @@ we're going to need to do it here in order to allow for translations.
 
                                 <div class="card__text">
                                     <a href="/watch?v=<%= rv["id"] %>&listen=<%= params.listen %>">
-                                        <h4 class="card__title" dir="auto"><%= HTML.escape(rv["title"]) %></h4>
+                                        <h4 class="card__title" dir="auto"><%= HTML.escape(IV::Frontend::DeArrow.title(env, rv["id"], rv["title"])) %></h4>
                                     </a>
                                     <p class="card__by">
                                         <% if !rv["ucid"].empty? %>

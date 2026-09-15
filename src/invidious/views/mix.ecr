@@ -10,6 +10,8 @@
     </a>
 </div>
 
+<%- IV::Frontend::DeArrow.prefetch(env, mix.videos) -%>
+
 <div class="grid">
 <% mix.videos.each do |item| %>
     <%= rendered "components/item" %>

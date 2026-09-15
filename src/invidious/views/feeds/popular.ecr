@@ -14,6 +14,7 @@
 </div>
 
 <div class="grid">
+<%- IV::Frontend::DeArrow.prefetch(env, popular_videos) -%>
 <% popular_videos.each do |item| %>
     <%= rendered "components/item" %>
 <% end %>

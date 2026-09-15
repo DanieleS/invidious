@@ -1,3 +1,7 @@
+<%- # Una sola infornata di richieste a DeArrow per tutta la pagina: le
+    # schede sotto leggono poi dalla cache, senza toccare la rete. -%>
+<%- IV::Frontend::DeArrow.prefetch(env, items) -%>
+
 <%= page_nav_html %>
 
 <div class="grid">

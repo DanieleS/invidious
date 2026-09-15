@@ -372,6 +372,69 @@ module Invidious::Routes::API::V1::Videos
     end
   end
 
+  # Read-only DeArrow lookup, proxied by the instance so that the DeArrow
+  # server never sees the viewer.
+  #
+  # Answers with the title and the thumbnail timestamp that won the vote
+  # (`null` when the uploader's are to be kept), plus everything that was
+  # submitted, for a client that would rather decide by itself.
+  def self.dearrow(env)
+    env.response.content_type = "application/json"
+
+    if !CONFIG.dearrow.enabled
+      haltf env, 403, error_json(403, "DeArrow is disabled on this instance")
+    end
+
+    id = env.params.url["id"]
+    if !validate_video_id(id)
+      haltf env, 400, error_json(400, InvalidVideoID.new(id))
+    end
+
+    begin
+      branding = IV::Videos::DeArrow.branding(id)
+    rescue ex
+      haltf env, 502, error_json(502, ex)
+    end
+
+    env.response.headers["Cache-Control"] = "public, max-age=#{CONFIG.dearrow.cache_ttl}"
+
+    JSON.build do |json|
+      json.object do
+        json.field "videoId", id
+        json.field "title", branding.title
+        json.field "thumbnailTime", branding.thumbnail_time(CONFIG.dearrow.random_thumbnails)
+
+        json.field "titles" do
+          json.array do
+            branding.titles.each do |title|
+              json.object do
+                json.field "uuid", title.uuid
+                json.field "title", IV::Videos::DeArrow.clean_title(title.title)
+                json.field "original", title.original
+                json.field "locked", title.locked
+                json.field "votes", title.votes
+              end
+            end
+          end
+        end
+
+        json.field "thumbnails" do
+          json.array do
+            branding.thumbnails.each do |thumbnail|
+              json.object do
+                json.field "uuid", thumbnail.uuid
+                json.field "timestamp", thumbnail.timestamp
+                json.field "original", thumbnail.original
+                json.field "locked", thumbnail.locked
+                json.field "votes", thumbnail.votes
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
   def self.comments(env)
     locale = env.get("preferences").as(Preferences).locale
     region = env.params.query["region"]?

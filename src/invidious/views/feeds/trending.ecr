@@ -31,6 +31,7 @@
 </div>
 
 <div class="grid">
+<%- IV::Frontend::DeArrow.prefetch(env, trending) -%>
 <% trending.each do |item| %>
     <%= rendered "components/item" %>
 <% end %>

@@ -24,6 +24,7 @@
 
     <% if !notifications.empty? %>
         <div class="grid">
+        <%- IV::Frontend::DeArrow.prefetch(env, notifications) -%>
         <% notifications.each do |item| %>
             <%= rendered "components/item" %>
         <% end %>
@@ -40,6 +41,8 @@
 %>
 </script>
 <script src="/js/watched_widget.js?v=<%= ASSET_COMMIT %>"></script>
+
+<%- IV::Frontend::DeArrow.prefetch(env, videos) -%>
 
 <div class="grid">
 <% videos.each do |item| %>

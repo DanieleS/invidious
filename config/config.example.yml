@@ -776,6 +776,78 @@ sponsorblock:
   ##
   #cache_ttl: 300
 
+#########################################
+#
+#  DeArrow Settings
+#
+#########################################
+
+dearrow:
+  ## Enable the read-only DeArrow integration: titles and thumbnails
+  ## submitted and voted on by other viewers replace the ones the uploader
+  ## chose, in listings and on the watch page alike.
+  ##
+  ## As with SponsorBlock, the lookup is made server-side and the video ID
+  ## is never sent: only the first four characters of its SHA-256 hash are.
+  ##
+  ## Submitting or voting is not supported.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #enabled: true
+
+  ## Server speaking the DeArrow API (the same host as SponsorBlock's).
+  ## A self-hosted mirror works too.
+  ##
+  ## Accepted values: a URL
+  ## Default: https://sponsor.ajay.app
+  ##
+  #server: https://sponsor.ajay.app
+
+  ## Replace thumbnails as well as titles. This is the expensive half of
+  ## DeArrow: the frames are rendered by another server and proxied by this
+  ## instance, one request per card. Titles keep working with this off.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #thumbnails: true
+
+  ## The DeArrow thumbnail cache, which renders the frames.
+  ##
+  ## Accepted values: a URL
+  ## Default: https://dearrow-thumb.ajay.app
+  ##
+  #thumbnail_server: https://dearrow-thumb.ajay.app
+
+  ## Also replace the thumbnail of videos nobody submitted one for, with a
+  ## frame the DeArrow server picks at random. That is what the browser
+  ## extension does by default; on an instance it means rendering and
+  ## proxying a frame for nearly every video ever shown.
+  ##
+  ## Accepted values: true, false
+  ## Default: false
+  ##
+  #random_thumbnails: false
+
+  ## How long an answer is kept in memory, in seconds. Titles change slowly,
+  ## and a listing page would otherwise look up twenty videos per view.
+  ##
+  ## Accepted values: a positive integer
+  ## Default: 900
+  ##
+  #cache_ttl: 900
+
+  ## How long a page may wait for the lookups it needs, in milliseconds.
+  ## Past that it is drawn with the titles YouTube gave; the answers that
+  ## arrive late are still cached, and the next load has them.
+  ##
+  ## Accepted values: a positive integer
+  ## Default: 1500
+  ##
+  #timeout: 1500
+
 default_user_preferences:
 
   # -----------------------------
@@ -1121,6 +1193,26 @@ default_user_preferences:
   ## Default: ["sponsor", "selfpromo", "interaction", "music_offtopic"]
   ##
   #sponsorblock_categories: ["sponsor", "selfpromo", "interaction", "music_offtopic"]
+
+  ##
+  ## Show the titles and thumbnails submitted to DeArrow.
+  ##
+  ## Note: This requires the 'dearrow' section above to be enabled.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #dearrow: true
+
+  ##
+  ## Which half of DeArrow is applied. Both are ignored when the
+  ## 'dearrow' preference above is off.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #dearrow_titles: true
+  #dearrow_thumbnails: true
 
   # -----------------------------
   #  Subscription feed

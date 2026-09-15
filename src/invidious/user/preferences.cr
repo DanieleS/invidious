@@ -64,6 +64,10 @@ struct Preferences
   @[YAML::Field(converter: Preferences::StringToArray)]
   property sponsorblock_categories : Array(String) = CONFIG.default_user_preferences.sponsorblock_categories
 
+  property dearrow : Bool = CONFIG.default_user_preferences.dearrow
+  property dearrow_titles : Bool = CONFIG.default_user_preferences.dearrow_titles
+  property dearrow_thumbnails : Bool = CONFIG.default_user_preferences.dearrow_thumbnails
+
   module BoolToString
     def self.to_json(value : String, json : JSON::Builder)
       json.string value
