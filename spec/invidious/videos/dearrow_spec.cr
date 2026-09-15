@@ -61,23 +61,23 @@ Spectator.describe Invidious::Videos::DeArrow do
     end
 
     it "keeps YouTube's title when the crowd voted for it" do
-      branding = Invidious::Videos::DeArrow::Branding.new(
-        titles: [Invidious::Videos::DeArrow::Title.new("What the uploader wrote", original: true, votes: 5)]
+      branding = Invidious::Videos::DeArrow::Branding.build(
+        titles: [Invidious::Videos::DeArrow::Title.build("What the uploader wrote", original: true, votes: 5)]
       )
 
       expect(branding.title).to be_nil
     end
 
     it "keeps YouTube's title when every submission was voted down" do
-      branding = Invidious::Videos::DeArrow::Branding.new(
-        titles: [Invidious::Videos::DeArrow::Title.new("Clickbait, but worse", votes: -2)]
+      branding = Invidious::Videos::DeArrow::Branding.build(
+        titles: [Invidious::Videos::DeArrow::Title.build("Clickbait, but worse", votes: -2)]
       )
 
       expect(branding.title).to be_nil
     end
 
     it "keeps YouTube's title when nothing was submitted" do
-      expect(Invidious::Videos::DeArrow::Branding.new.title).to be_nil
+      expect(Invidious::Videos::DeArrow::Branding.build.title).to be_nil
     end
   end
 
@@ -100,8 +100,8 @@ Spectator.describe Invidious::Videos::DeArrow do
     end
 
     it "keeps YouTube's thumbnail when the crowd voted for it" do
-      branding = Invidious::Videos::DeArrow::Branding.new(
-        thumbnails: [Invidious::Videos::DeArrow::Thumbnail.new(original: true, votes: 5)],
+      branding = Invidious::Videos::DeArrow::Branding.build(
+        thumbnails: [Invidious::Videos::DeArrow::Thumbnail.build(original: true, votes: 5)],
         random_time: 0.5,
         video_duration: 100.0
       )
@@ -110,14 +110,14 @@ Spectator.describe Invidious::Videos::DeArrow do
     end
 
     it "falls back to a random frame only when asked to" do
-      branding = Invidious::Videos::DeArrow::Branding.new(random_time: 0.5, video_duration: 100.0)
+      branding = Invidious::Videos::DeArrow::Branding.build(random_time: 0.5, video_duration: 100.0)
 
       expect(branding.thumbnail_time(random: false)).to be_nil
       expect(branding.thumbnail_time(random: true)).to eq(50.0)
     end
 
     it "has nothing to fall back to without a duration" do
-      branding = Invidious::Videos::DeArrow::Branding.new(random_time: 0.5)
+      branding = Invidious::Videos::DeArrow::Branding.build(random_time: 0.5)
 
       expect(branding.thumbnail_time(random: true)).to be_nil
     end

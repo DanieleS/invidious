@@ -48,7 +48,14 @@ module Invidious::Videos::DeArrow
     @[JSON::Field(key: "UUID")]
     property uuid : String = ""
 
-    def initialize(@title, @original = false, @votes = 0, @locked = false, @uuid = "")
+    # `helpers/macros.cr` riapre JSON::Serializable e, in un `macro finished`,
+    # definisce `initialize(tuple)`. Siccome `macro finished` gira per ultimo,
+    # quella definizione cancella qualunque `initialize` scritto qui: su una
+    # struct serializzabile, in Invidious, il costruttore non te lo puoi
+    # scrivere. `build` gira intorno alla trappola usandola — passa al
+    # costruttore del macro la tupla con tutti i campi.
+    def self.build(title : String, original = false, votes = 0, locked = false, uuid = "") : Title
+      new({title: title, original: original, votes: votes, locked: locked, uuid: uuid})
     end
   end
 
@@ -66,7 +73,8 @@ module Invidious::Videos::DeArrow
     @[JSON::Field(key: "UUID")]
     property uuid : String = ""
 
-    def initialize(@timestamp = nil, @original = false, @votes = 0, @locked = false, @uuid = "")
+    def self.build(timestamp = nil, original = false, votes = 0, locked = false, uuid = "") : Thumbnail
+      new({timestamp: timestamp, original: original, votes: votes, locked: locked, uuid: uuid})
     end
   end
 
@@ -87,12 +95,18 @@ module Invidious::Videos::DeArrow
     @[JSON::Field(key: "videoDuration")]
     property video_duration : Float64? = nil
 
-    def initialize(
-      @titles = [] of Title,
-      @thumbnails = [] of Thumbnail,
-      @random_time = nil,
-      @video_duration = nil,
-    )
+    def self.build(
+      titles = [] of Title,
+      thumbnails = [] of Thumbnail,
+      random_time = nil,
+      video_duration = nil,
+    ) : Branding
+      new({
+        titles:         titles,
+        thumbnails:     thumbnails,
+        random_time:    random_time,
+        video_duration: video_duration,
+      })
     end
 
     # The title to show, or nil to keep YouTube's.
@@ -163,11 +177,11 @@ module Invidious::Videos::DeArrow
   # unexpected. Page rendering doesn't use this: it goes through `prefetch`,
   # which never raises and never waits for long.
   def branding(video_id : String) : Branding
-    return Branding.new if !validate_video_id(video_id)
+    return Branding.build if !validate_video_id(video_id)
 
     cached(video_id) || begin
       fetch_and_cache(prefix_of(video_id), [video_id])
-      cached(video_id) || Branding.new
+      cached(video_id) || Branding.build
     end
   end
 
@@ -194,7 +208,9 @@ module Invidious::Videos::DeArrow
 
     # Buffered, so that a fiber finishing after the deadline doesn't block on
     # a channel nobody reads any more.
-    done = Channel(Nil).new(batches.size)
+    # `::` obbligatorio: dentro `Invidious` il nome `Channel` è già quello dei
+    # canali di YouTube, che è un modulo, non il canale di Crystal.
+    done = ::Channel(Nil).new(batches.size)
 
     batches.each do |prefix, ids|
       spawn do
@@ -249,7 +265,7 @@ module Invidious::Videos::DeArrow
     expires = Time.utc + CONFIG.dearrow.cache_ttl.seconds
 
     video_ids.each do |video_id|
-      CACHE[video_id] = {expires, answer[video_id]? || Branding.new}
+      CACHE[video_id] = {expires, answer[video_id]? || Branding.build}
     end
   end
 
