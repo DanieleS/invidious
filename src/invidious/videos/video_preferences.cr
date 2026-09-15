@@ -28,6 +28,8 @@ module Invidious::Videos
     property volume : Int32
     property vr_mode : Bool
     property save_player_pos : Bool
+    property sponsorblock : Bool
+    property sponsorblock_categories : Array(String)
   end
 
   def process_video_params(query, preferences)
@@ -51,6 +53,8 @@ module Invidious::Videos
     volume = query["volume"]?.try &.to_i?
     vr_mode = query["vr_mode"]?.try { |q| (q == "true" || q == "1").to_unsafe }
     save_player_pos = query["save_player_pos"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+    sponsorblock = query["sponsorblock"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+    sponsorblock_categories = query["sponsorblock_categories"]?.try &.split(",").map(&.strip.downcase)
 
     if preferences
       # region ||= preferences.region
@@ -73,6 +77,8 @@ module Invidious::Videos
       volume ||= preferences.volume
       vr_mode ||= preferences.vr_mode.to_unsafe
       save_player_pos ||= preferences.save_player_pos.to_unsafe
+      sponsorblock ||= preferences.sponsorblock.to_unsafe
+      sponsorblock_categories ||= preferences.sponsorblock_categories
     end
 
     annotations ||= CONFIG.default_user_preferences.annotations.to_unsafe
@@ -94,6 +100,8 @@ module Invidious::Videos
     volume ||= CONFIG.default_user_preferences.volume
     vr_mode ||= CONFIG.default_user_preferences.vr_mode.to_unsafe
     save_player_pos ||= CONFIG.default_user_preferences.save_player_pos.to_unsafe
+    sponsorblock ||= CONFIG.default_user_preferences.sponsorblock.to_unsafe
+    sponsorblock_categories ||= CONFIG.default_user_preferences.sponsorblock_categories
 
     annotations = annotations == 1
     preload = preload == 1
@@ -107,6 +115,14 @@ module Invidious::Videos
     extend_desc = extend_desc == 1
     vr_mode = vr_mode == 1
     save_player_pos = save_player_pos == 1
+    sponsorblock = (sponsorblock == 1) && CONFIG.sponsorblock.enabled
+
+    # A category the instance doesn't know about can only come from a
+    # hand-written URL or an old preferences cookie: drop it here rather than
+    # carry it all the way to the player and the API.
+    sponsorblock_categories = sponsorblock_categories.select do |category|
+      Invidious::Videos::SponsorBlock::CATEGORIES.includes?(category)
+    end
 
     if CONFIG.disabled?("dash") && quality == "dash"
       quality = "high"
@@ -159,6 +175,9 @@ module Invidious::Videos
       volume:             volume,
       vr_mode:            vr_mode,
       save_player_pos:    save_player_pos,
+
+      sponsorblock:            sponsorblock,
+      sponsorblock_categories: sponsorblock_categories,
     })
 
     return params

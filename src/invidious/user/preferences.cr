@@ -58,6 +58,11 @@ struct Preferences
   property save_player_pos : Bool = CONFIG.default_user_preferences.save_player_pos
   property default_playlist : String? = nil
   property search_privacy : Bool = CONFIG.default_user_preferences.search_privacy
+  property sponsorblock : Bool = CONFIG.default_user_preferences.sponsorblock
+
+  @[JSON::Field(converter: Preferences::StringToArray)]
+  @[YAML::Field(converter: Preferences::StringToArray)]
+  property sponsorblock_categories : Array(String) = CONFIG.default_user_preferences.sponsorblock_categories
 
   module BoolToString
     def self.to_json(value : String, json : JSON::Builder)

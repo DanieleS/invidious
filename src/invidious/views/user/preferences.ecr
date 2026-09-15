@@ -125,6 +125,25 @@
                 <input name="save_player_pos" id="save_player_pos" type="checkbox" <% if preferences.save_player_pos %>checked<% end %>>
             </div>
 
+            <%- # SponsorBlock, in sola lettura: i tratti che gli altri hanno
+                # già segnalato si saltano da soli. Le caselle delle categorie
+                # restano visibili anche a interruttore spento, perché è lì che
+                # si decide *cosa* saltare prima di accenderlo. -%>
+            <% if CONFIG.sponsorblock.enabled %>
+                <div class="field field--check">
+                    <label for="sponsorblock"><%= I18n.translate(locale, "preferences_sponsorblock_label") %></label>
+                    <input name="sponsorblock" id="sponsorblock" type="checkbox" <% if preferences.sponsorblock %>checked<% end %>>
+                    <span class="preference-description"><%= I18n.translate(locale, "preferences_sponsorblock_description") %></span>
+                </div>
+
+                <% Invidious::Videos::SponsorBlock::CATEGORIES.each do |category| %>
+                    <div class="field field--check field--sub">
+                        <label for="sponsorblock_categories[<%= category %>]"><%= I18n.translate(locale, "sponsorblock_category_" + category) %></label>
+                        <input name="sponsorblock_categories[<%= category %>]" id="sponsorblock_categories[<%= category %>]" type="checkbox" <% if preferences.sponsorblock_categories.includes?(category) %>checked<% end %>>
+                    </div>
+                <% end %>
+            <% end %>
+
             <% if user = env.get?("user").try &.as(User) %>
                 <% playlists = Invidious::Database::Playlists.select_user_created_playlists(user.email) %>
                 <div class="field">

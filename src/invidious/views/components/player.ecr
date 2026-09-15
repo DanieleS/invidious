@@ -93,7 +93,16 @@
     "title" => video.title,
     "description" => HTML.escape(video.short_description),
     "thumbnail" => thumbnail,
-    "preferred_caption_found" => !preferred_captions.empty?
+    "preferred_caption_found" => !preferred_captions.empty?,
+    "sponsorblock" => {
+        "enabled" => params.sponsorblock,
+        "categories" => params.sponsorblock_categories,
+        "skipped_text" => I18n.translate(locale, "sponsorblock_skipped"),
+        "muted_text" => I18n.translate(locale, "sponsorblock_muted"),
+        "undo_text" => I18n.translate(locale, "sponsorblock_undo"),
+        "labels" => Invidious::Videos::SponsorBlock::CATEGORIES
+            .to_h { |category| {category, I18n.translate(locale, "sponsorblock_category_" + category)} }
+    }
 }.to_pretty_json
 %>
 </script>

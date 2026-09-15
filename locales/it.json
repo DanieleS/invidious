@@ -556,5 +556,18 @@
     "offline_confirm_delete": "Vuoi togliere questo video dal dispositivo?",
     "offline_confirm_clear": "Vuoi togliere dal dispositivo tutti i video salvati?",
     "pwa_install": "Installa l'app",
-    "offline_download_file": "Scarica il file"
+    "offline_download_file": "Scarica il file",
+    "preferences_sponsorblock_label": "SponsorBlock: ",
+    "preferences_sponsorblock_description": "Salta i tratti che altri hanno già segnalato, usando i dati di SponsorBlock. La richiesta la fa questo server: né il tuo indirizzo né il codice del video arrivano a SponsorBlock.",
+    "sponsorblock_category_sponsor": "Sponsorizzazione",
+    "sponsorblock_category_selfpromo": "Autopromozione",
+    "sponsorblock_category_interaction": "Invito a iscriversi",
+    "sponsorblock_category_intro": "Sigla iniziale",
+    "sponsorblock_category_outro": "Coda e titoli",
+    "sponsorblock_category_preview": "Riassunto o anteprima",
+    "sponsorblock_category_filler": "Divagazione",
+    "sponsorblock_category_music_offtopic": "Parti non musicali",
+    "sponsorblock_skipped": "Saltato: {category}",
+    "sponsorblock_muted": "Muto: {category}",
+    "sponsorblock_undo": "Annulla"
 }

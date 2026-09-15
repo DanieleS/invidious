@@ -52,6 +52,11 @@ struct ConfigPreferences
   property vr_mode : Bool = true
   property show_nick : Bool = true
   property save_player_pos : Bool = false
+  # SponsorBlock, in read-only mode: skip the segments other people have
+  # already marked. `sponsorblock_categories` lists what gets skipped; a
+  # category left out is neither skipped nor drawn on the progress bar.
+  property sponsorblock : Bool = true
+  property sponsorblock_categories : Array(String) = ["sponsor", "selfpromo", "interaction", "music_offtopic"]
   @[YAML::Field(ignore: true)]
   property default_playlist : String? = nil
   property search_privacy : Bool = false
@@ -219,6 +224,27 @@ class Config
 
   # Disable easy to abuse API endpoints
   property disable_abusable_api : Bool = false
+
+  # SponsorBlock lookups, proxied by the instance (see
+  # `src/invidious/videos/sponsorblock.cr`). Turning this off hides the
+  # feature from the preferences page and makes the API endpoint answer 403,
+  # whatever a user may have saved before.
+  property sponsorblock : SponsorBlockConfig = SponsorBlockConfig.from_yaml("")
+
+  struct SponsorBlockConfig
+    include YAML::Serializable
+
+    property enabled : Bool = true
+
+    # Any server speaking the SponsorBlock API; a self-hosted mirror works
+    # just as well as the official one.
+    @[YAML::Field(converter: Preferences::URIConverter)]
+    property server : URI = URI.parse("https://sponsor.ajay.app")
+
+    # How long an answer is kept in memory, in seconds. Segments change
+    # slowly, and a popular video would otherwise be looked up once per view.
+    property cache_ttl : Int32 = 300
+  end
 
   property videojs : VideoJSConfig = VideoJSConfig.from_yaml("")
 

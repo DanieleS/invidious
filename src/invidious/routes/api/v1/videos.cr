@@ -32,8 +32,9 @@ module Invidious::Routes::API::V1::Videos
     id = env.params.url["id"]
     region = env.params.query["region"]? || env.params.body["region"]?
 
-    if id.nil? || id.size != 11 || !id.matches?(/^[\w-]+$/)
-      return error_json(400, "Invalid video ID")
+    # Sanity checks
+    unless validate_video_id(id)
+      return error_json(400, InvalidVideoID.new(id))
     end
 
     # See https://github.com/ytdl-org/youtube-dl/blob/6ab30ff50bf6bd0585927cb73c7421bef184f87a/youtube_dl/extractor/youtube.py#L1354
@@ -256,11 +257,11 @@ module Invidious::Routes::API::V1::Videos
   def self.annotations(env)
     env.response.content_type = "text/xml"
 
-    id = env.params.url["id"]
+    video_id = env.params.url["id"]
     source = env.params.query["source"]?
     source ||= "archive"
 
-    if !id.match(/[a-zA-Z0-9_-]{11}/)
+    unless video_id && validate_video_id(video_id)
       haltf env, 400
     end
 
@@ -268,21 +269,21 @@ module Invidious::Routes::API::V1::Videos
 
     case source
     when "archive"
-      if CONFIG.cache_annotations && (cached_annotation = Invidious::Database::Annotations.select(id))
+      if CONFIG.cache_annotations && (cached_annotation = Invidious::Database::Annotations.select(video_id))
         annotations = cached_annotation.annotations
       else
-        index = CHARS_SAFE.index!(id[0]).to_s.rjust(2, '0')
+        index = CHARS_SAFE.index!(video_id[0]).to_s.rjust(2, '0')
 
         # IA doesn't handle leading hyphens,
         # so we use https://archive.org/details/youtubeannotations_64
         if index == "62"
           index = "64"
-          id = id.sub(/^-/, 'A')
+          video_id = video_id.sub(/^-/, 'A')
         end
 
-        file = URI.encode_www_form("#{id[0, 3]}/#{id}.xml")
+        file = URI.encode_www_form("#{video_id[0, 3]}/#{video_id}.xml")
 
-        location = make_client(INTERNET_ARCHIVE_URL, &.get("/download/youtubeannotations_#{index}/#{id[0, 2]}.tar/#{file}"))
+        location = make_client(INTERNET_ARCHIVE_URL, &.get("/download/youtubeannotations_#{index}/#{video_id[0, 2]}.tar/#{file}"))
 
         if !location.headers["Location"]?
           env.response.status_code = location.status_code
@@ -300,10 +301,10 @@ module Invidious::Routes::API::V1::Videos
 
         annotations = response.body
 
-        Helpers.cache_annotation(id, annotations)
+        Helpers.cache_annotation(video_id, annotations)
       end
     else # "youtube"
-      response = YT_POOL.client &.get("/annotations_invideo?video_id=#{id}")
+      response = YT_POOL.client &.get("/annotations_invideo?video_id=#{video_id}")
 
       if response.status_code != 200
         haltf env, response.status_code
@@ -318,6 +319,56 @@ module Invidious::Routes::API::V1::Videos
     else
       env.response.headers["ETag"] = etag
       annotations
+    end
+  end
+
+  # Read-only SponsorBlock lookup, proxied by the instance so that the
+  # SponsorBlock server never sees the viewer.
+  #
+  # Answers `{"videoId": ..., "segments": [...]}`, with an empty list when
+  # nobody has marked anything in this video yet.
+  def self.sponsorblock(env)
+    env.response.content_type = "application/json"
+
+    if !CONFIG.sponsorblock.enabled
+      haltf env, 403, error_json(403, "SponsorBlock is disabled on this instance")
+    end
+
+    id = env.params.url["id"]
+    if !validate_video_id(id)
+      haltf env, 400, error_json(400, InvalidVideoID.new(id))
+    end
+
+    categories = env.params.query["categories"]?.try &.split(",").map(&.strip.downcase)
+    categories ||= CONFIG.default_user_preferences.sponsorblock_categories
+
+    begin
+      segments = IV::Videos::SponsorBlock.segments(id, categories)
+    rescue ex
+      haltf env, 502, error_json(502, ex)
+    end
+
+    env.response.headers["Cache-Control"] = "public, max-age=#{CONFIG.sponsorblock.cache_ttl}"
+
+    JSON.build do |json|
+      json.object do
+        json.field "videoId", id
+        json.field "segments" do
+          json.array do
+            segments.each do |segment|
+              json.object do
+                json.field "uuid", segment.uuid
+                json.field "category", segment.category
+                json.field "actionType", segment.action_type
+                json.field "startTime", segment.start_time
+                json.field "endTime", segment.end_time
+                json.field "locked", segment.locked
+                json.field "votes", segment.votes
+              end
+            end
+          end
+        end
+      end
     end
   end
 
@@ -339,6 +390,9 @@ module Invidious::Routes::API::V1::Videos
     format ||= "json"
 
     action = env.params.query["action"]?
+    # 2026-09-14 TODO: Check if action is or can be used somewhere
+    # as is unused currently, but for some reason is it here.
+    # ameba:disable Lint/UselessAssign
     action ||= "action_get_comments"
 
     continuation = env.params.query["continuation"]?
