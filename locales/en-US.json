@@ -549,5 +549,18 @@
     "offline_confirm_delete": "Remove this video from the device?",
     "offline_confirm_clear": "Remove every video saved on this device?",
     "pwa_install": "Install the app",
-    "offline_download_file": "Download the file"
+    "offline_download_file": "Download the file",
+    "preferences_sponsorblock_label": "SponsorBlock: ",
+    "preferences_sponsorblock_description": "Skip the segments other viewers have already marked, using data from SponsorBlock. The lookup is made by this instance: neither your address nor the video ID reaches the SponsorBlock server.",
+    "sponsorblock_category_sponsor": "Sponsor",
+    "sponsorblock_category_selfpromo": "Unpaid or self promotion",
+    "sponsorblock_category_interaction": "Reminder to subscribe",
+    "sponsorblock_category_intro": "Intro animation",
+    "sponsorblock_category_outro": "Endcards and credits",
+    "sponsorblock_category_preview": "Preview or recap",
+    "sponsorblock_category_filler": "Filler tangent",
+    "sponsorblock_category_music_offtopic": "Non-music section",
+    "sponsorblock_skipped": "Skipped: {category}",
+    "sponsorblock_muted": "Muted: {category}",
+    "sponsorblock_undo": "Undo"
 }

@@ -739,6 +739,43 @@ videojs:
   ##
   max_goal_buffer_length: 60
 
+#########################################
+#
+#  SponsorBlock Settings
+#
+#########################################
+
+sponsorblock:
+  ## Enable the read-only SponsorBlock integration: the instance looks up
+  ## the segments other people have marked (sponsor reads, intros, and so
+  ## on) and the player skips them.
+  ##
+  ## The lookup is made server-side, and the video ID is never sent: only
+  ## the first four characters of its SHA-256 hash are, so the SponsorBlock
+  ## server learns neither who is watching nor what.
+  ##
+  ## Submitting or voting on segments is not supported.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #enabled: true
+
+  ## Server speaking the SponsorBlock API. A self-hosted mirror works too.
+  ##
+  ## Accepted values: a URL
+  ## Default: https://sponsor.ajay.app
+  ##
+  #server: https://sponsor.ajay.app
+
+  ## How long an answer is kept in memory, in seconds. Segments change
+  ## slowly, and a popular video would otherwise be looked up once per view.
+  ##
+  ## Accepted values: a positive integer
+  ## Default: 300
+  ##
+  #cache_ttl: 300
+
 default_user_preferences:
 
   # -----------------------------
@@ -1064,6 +1101,26 @@ default_user_preferences:
   ## Default: false
   ##
   #save_player_pos: false
+
+  ##
+  ## Skip the segments marked on SponsorBlock.
+  ##
+  ## Note: This requires the 'sponsorblock' section above to be enabled.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #sponsorblock: true
+
+  ##
+  ## Which kinds of segment are skipped. A category left out of this
+  ## list is neither skipped nor drawn on the progress bar.
+  ##
+  ## Accepted values: an array of "sponsor", "selfpromo", "interaction",
+  ##   "intro", "outro", "preview", "filler", "music_offtopic"
+  ## Default: ["sponsor", "selfpromo", "interaction", "music_offtopic"]
+  ##
+  #sponsorblock_categories: ["sponsor", "selfpromo", "interaction", "music_offtopic"]
 
   # -----------------------------
   #  Subscription feed

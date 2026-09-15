@@ -255,6 +255,7 @@ module Invidious::Routing
       get "/api/v1/storyboards/:id", {{namespace}}::Videos, :storyboards
       get "/api/v1/captions/:id", {{namespace}}::Videos, :captions
       get "/api/v1/annotations/:id", {{namespace}}::Videos, :annotations
+      get "/api/v1/sponsorblock/:id", {{namespace}}::Videos, :sponsorblock
       get "/api/v1/comments/:id", {{namespace}}::Videos, :comments
       get "/api/v1/clips/:id", {{namespace}}::Videos, :clips
       get "/api/v1/transcripts/:id", {{namespace}}::Videos, :transcripts

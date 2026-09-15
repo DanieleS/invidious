@@ -813,6 +813,247 @@ var IvChapterDisplay = videojs.extend(Button, {
 videojs.registerComponent('IvChapterDisplay', IvChapterDisplay);
 
 /* ==========================================================================
+ * SponsorBlock, in sola lettura
+ *
+ * SponsorBlock è un archivio di segnalazioni: qualcuno guarda un video, marca
+ * il tratto in cui l'autore legge la pubblicità, e da quel momento chiunque
+ * può saltarlo. Qui quelle segnalazioni si leggono soltanto: mandarne di
+ * nuove vorrebbe dire tenere in giro un identificativo per ogni persona, e un
+ * server condiviso non è il posto giusto per custodirlo.
+ *
+ * L'elenco arriva dal nostro `/api/v1/sponsorblock/<id>`, non da
+ * sponsor.ajay.app: la richiesta la fa il server, che per giunta non manda il
+ * codice del video ma solo le prime quattro cifre della sua impronta. Chi
+ * tiene l'archivio non vede né chi guarda né cosa.
+ *
+ * Il salto ha una sola regola non ovvia: un tratto saltato non si salta due
+ * volte. Se dopo il salto si torna indietro è perché lo si vuole vedere, e
+ * insistere sarebbe una lotta contro chi guarda.
+ * ========================================================================== */
+
+var IV_SB = {
+    segments: [],
+    // I tratti già saltati, per UUID: da lì in poi si guardano.
+    seen: {},
+    // Il tratto che stiamo silenziando adesso, e com'era l'audio prima.
+    muting: null,
+    muted_before: false,
+    // Alzata mentre siamo noi a togliere l'audio, così il riscontro del
+    // volume non annuncia un muto che non ha chiesto nessuno.
+    internal_mute: false,
+    notice_timer: null
+};
+
+/** Il nome leggibile di una categoria, con il codice come ripiego. */
+function iv_sb_label(category) {
+    var labels = (player_data.sponsorblock || {}).labels || {};
+    return labels[category] || category;
+}
+
+/**
+ * Il cartellino che dice cosa è appena stato saltato, con il rimando per
+ * tornare indietro. Non è il riscontro dei gesti (`iv_toast`): quello sparisce
+ * da solo in un attimo e non si può toccare, questo deve restare abbastanza da
+ * poterci cliccare sopra.
+ *
+ * @param {String} text
+ * @param {Function|null} undo Cosa fare se si torna indietro; niente rimando se manca.
+ */
+function iv_sb_notice(text, undo) {
+    var root = player.el();
+    if (!root) return;
+
+    var el = root.querySelector('.iv-sb-notice');
+    if (!el) {
+        el = videojs.dom.createEl('div', { className: 'iv-sb-notice' }, { 'aria-live': 'polite' });
+        root.appendChild(el);
+    }
+
+    el.textContent = '';
+
+    var label = document.createElement('span');
+    label.className = 'iv-sb-notice-text';
+    label.textContent = text;
+    el.appendChild(label);
+
+    if (undo) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'iv-sb-undo';
+        button.textContent = (player_data.sponsorblock || {}).undo_text || 'Undo';
+        button.addEventListener('click', function () {
+            iv_sb_hide_notice();
+            undo();
+        });
+        el.appendChild(button);
+    }
+
+    el.classList.add('iv-sb-notice-on');
+
+    if (IV_SB.notice_timer) clearTimeout(IV_SB.notice_timer);
+    IV_SB.notice_timer = setTimeout(iv_sb_hide_notice, 6000);
+}
+
+function iv_sb_hide_notice() {
+    var el = player.el() && player.el().querySelector('.iv-sb-notice');
+    if (el) el.classList.remove('iv-sb-notice-on');
+    if (IV_SB.notice_timer) clearTimeout(IV_SB.notice_timer);
+    IV_SB.notice_timer = null;
+}
+
+/**
+ * Dipinge i tratti sulla barra di scorrimento.
+ *
+ * Sopra a tutto il resto, compreso il pieno di quello che si è già visto: è
+ * l'ordine che ha anche l'estensione, e serve a far capire che quei tratti
+ * sono un'altra cosa rispetto al video.
+ */
+function iv_sb_paint() {
+    var holder = player.el() && player.el().querySelector('.vjs-progress-holder');
+    if (!holder) return;
+
+    var marks = holder.querySelector('.iv-sb-marks');
+    var duration = player.duration();
+
+    if (!IV_SB.segments.length || !duration || !isFinite(duration)) {
+        if (marks) marks.parentNode.removeChild(marks);
+        return;
+    }
+
+    if (!marks) {
+        marks = document.createElement('div');
+        marks.className = 'iv-sb-marks';
+        holder.appendChild(marks);
+    }
+
+    marks.textContent = '';
+
+    IV_SB.segments.forEach(function (seg) {
+        var left = seg.start / duration * 100;
+        if (left >= 100) return;
+
+        var width = (Math.min(seg.end, duration) - seg.start) / duration * 100;
+
+        var bar = document.createElement('span');
+        bar.className = 'iv-sb-mark iv-sb-' + seg.category.replace(/_/g, '-');
+        bar.style.left = Math.max(0, left).toFixed(3) + '%';
+        // Mezzo punto percentuale di larghezza minima: sotto, un tratto di
+        // pochi secondi in un video lungo non si vedrebbe affatto.
+        bar.style.width = Math.min(Math.max(width, 0.5), 100 - left).toFixed(3) + '%';
+        bar.title = iv_sb_label(seg.category);
+        marks.appendChild(bar);
+    });
+}
+
+/** Porta il lettore alla fine del tratto e lo annuncia. */
+function iv_sb_skip(seg) {
+    var duration = player.duration();
+    var target = (duration && isFinite(duration)) ? Math.min(seg.end, duration) : seg.end;
+
+    IV_SB.seen[seg.uuid] = true;
+    player.currentTime(target);
+
+    var text = ((player_data.sponsorblock || {}).skipped_text || '{category}')
+        .replace('{category}', iv_sb_label(seg.category));
+
+    iv_sb_notice(text, function () { player.currentTime(seg.start); });
+}
+
+/**
+ * Toglie o rimette l'audio per i tratti segnalati come «da silenziare».
+ *
+ * Se l'audio era già tolto prima di entrarci, alla fine si lascia com'era: la
+ * scelta di chi guarda viene prima della nostra.
+ *
+ * @param {Object|null} seg Il tratto in cui ci si trova, o niente se si è fuori.
+ */
+function iv_sb_mute(seg) {
+    if (seg && !IV_SB.muting) {
+        IV_SB.muting = seg;
+        IV_SB.muted_before = player.muted();
+
+        if (!IV_SB.muted_before) {
+            IV_SB.internal_mute = true;
+            player.muted(true);
+            IV_SB.internal_mute = false;
+        }
+
+        var text = ((player_data.sponsorblock || {}).muted_text || '{category}')
+            .replace('{category}', iv_sb_label(seg.category));
+        iv_sb_notice(text, null);
+        return;
+    }
+
+    if (!seg && IV_SB.muting) {
+        if (!IV_SB.muted_before) {
+            IV_SB.internal_mute = true;
+            player.muted(false);
+            IV_SB.internal_mute = false;
+        }
+        IV_SB.muting = null;
+    }
+}
+
+/** Guarda dove siamo e decide se saltare, silenziare o lasciar correre. */
+function iv_sb_tick() {
+    if (!IV_SB.segments.length) return;
+
+    var time = player.currentTime();
+    var muting = null;
+
+    for (var i = 0; i < IV_SB.segments.length; i++) {
+        var seg = IV_SB.segments[i];
+        if (time < seg.start || time >= seg.end) continue;
+
+        if (seg.action === 'mute') {
+            muting = seg;
+            continue;
+        }
+
+        if (IV_SB.seen[seg.uuid]) continue;
+
+        iv_sb_skip(seg);
+        return;
+    }
+
+    iv_sb_mute(muting);
+}
+
+/** Chiede l'elenco e, se c'è qualcosa, accende il resto. */
+function iv_sb_load() {
+    var cfg = player_data.sponsorblock;
+    if (!cfg || !cfg.enabled || !cfg.categories || !cfg.categories.length) return;
+
+    // In diretta non c'è niente da saltare, e la durata cambia sotto i piedi.
+    if (video_data.live_now) return;
+
+    var url = '/api/v1/sponsorblock/' + encodeURIComponent(video_data.id) +
+        '?categories=' + encodeURIComponent(cfg.categories.join(','));
+
+    helpers.xhr('GET', url, { responseType: 'json', timeout: 20000 }, {
+        on200: function (response) {
+            var segments = (response && response.segments) || [];
+
+            IV_SB.segments = segments.map(function (seg) {
+                return {
+                    uuid: seg.uuid,
+                    category: seg.category,
+                    action: seg.actionType,
+                    start: seg.startTime,
+                    end: seg.endTime
+                };
+            });
+
+            if (!IV_SB.segments.length) return;
+
+            iv_sb_paint();
+            player.on(['durationchange', 'loadedmetadata'], iv_sb_paint);
+            player.on('timeupdate', iv_sb_tick);
+        }
+    });
+}
+
+/* ==========================================================================
  * Il lettore ridotto
  *
  * Quando il lettore esce dallo schermo mentre si scorre, il video si stacca e
@@ -1139,6 +1380,8 @@ addEventListener('DOMContentLoaded', function () {
     iv_move_share_to_page();
 });
 
+iv_sb_load();
+
 // Il riscontro a schermo parte solo dopo il primo avvio: il volume e la
 // velocità vengono impostati dalle preferenze appena il lettore nasce, e non
 // c'è niente da annunciare per una cosa che l'utente non ha fatto.
@@ -1147,6 +1390,9 @@ player.one('play', function () { iv_feedback_ready = true; });
 
 player.on('volumechange', function () {
     if (!iv_feedback_ready) return;
+    // Il muto dei tratti segnalati ha già il suo cartellino: annunciarlo anche
+    // qui direbbe «muto» a chi non ha toccato niente.
+    if (IV_SB.internal_mute) return;
 
     if (player.muted() || player.volume() === 0) iv_toast(player.localize('Mute'));
     else iv_toast(player.localize('Volume') + ' ' + iv_volume_percent() + '%');

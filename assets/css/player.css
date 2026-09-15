@@ -944,6 +944,102 @@
   transform: translateX(-50%) translateY(0);
 }
 
+/* ==========================================================================
+   7-bis. SponsorBlock: i tratti sulla barra e il cartellino del salto
+   ========================================================================== */
+
+/* I colori sono quelli dell'estensione: chi li conosce di là li riconosce
+   qui senza dover imparare una seconda legenda. */
+.video-js .iv-sb-marks {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.video-js .iv-sb-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--sb-color, #00d400);
+}
+
+.video-js .iv-sb-sponsor { --sb-color: #00d400; }
+.video-js .iv-sb-selfpromo { --sb-color: #ffff00; }
+.video-js .iv-sb-interaction { --sb-color: #cc00ff; }
+.video-js .iv-sb-intro { --sb-color: #00ffff; }
+.video-js .iv-sb-outro { --sb-color: #0202ed; }
+.video-js .iv-sb-preview { --sb-color: #008fd6; }
+.video-js .iv-sb-filler { --sb-color: #7300ff; }
+.video-js .iv-sb-music-offtopic { --sb-color: #ff9900; }
+
+/* Il cartellino sta in basso a sinistra, sopra la plancia: è una cosa
+   successa al video, non un comando, e non deve coprire quello che si guarda.
+   A differenza del riscontro dei gesti si può toccare, perché contiene il
+   rimando per tornare indietro. */
+.video-js .iv-sb-notice {
+  position: absolute;
+  left: var(--s-4);
+  bottom: var(--s-4);
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  max-width: calc(100% - var(--s-4) * 2);
+  padding: 6px 8px 6px 13px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  border: 1px solid var(--panel-line);
+  color: var(--on-media);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
+}
+
+/* A schermo intero la plancia torna dentro l'immagine, e il cartellino le
+   deve stare sopra invece che sotto. */
+.video-js.vjs-fullscreen .iv-sb-notice {
+  bottom: 92px;
+}
+
+.video-js .iv-sb-notice.iv-sb-notice-on {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.video-js .iv-sb-notice-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-js .iv-sb-undo {
+  flex: none;
+  padding: 3px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--on-media);
+  color: #000;
+  font: inherit;
+  cursor: pointer;
+}
+
+.video-js .iv-sb-undo:hover,
+.video-js .iv-sb-undo:focus-visible {
+  opacity: 0.85;
+}
+
+/* Nel lettore ridotto non c'è spazio per un cartellino con un pulsante. */
+.player-shell.iv-mini .iv-sb-notice {
+  display: none;
+}
+
 /* I gesti: il verso verticale resta al browser finché attorno al video c'è una
    pagina da scorrere, e diventa nostro (volume, luminosità) solo a schermo
    intero. `pan-y` è esattamente questa frase scritta in CSS. */

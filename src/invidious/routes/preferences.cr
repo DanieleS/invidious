@@ -149,6 +149,16 @@ module Invidious::Routes::PreferencesRoute
     search_privacy ||= "off"
     search_privacy = search_privacy == "on"
 
+    sponsorblock = env.params.body["sponsorblock"]?.try &.as(String)
+    sponsorblock ||= "off"
+    sponsorblock = sponsorblock == "on"
+
+    sponsorblock_categories = [] of String
+    Invidious::Videos::SponsorBlock::CATEGORIES.each do |category|
+      next if env.params.body["sponsorblock_categories[#{category}]"]?.try(&.as(String)) != "on"
+      sponsorblock_categories << category
+    end
+
     # Convert to JSON and back again to take advantage of converters used for compatibility
     preferences = Preferences.from_json({
       annotations:                 annotations,
@@ -187,6 +197,8 @@ module Invidious::Routes::PreferencesRoute
       save_player_pos:             save_player_pos,
       default_playlist:            default_playlist,
       search_privacy:              search_privacy,
+      sponsorblock:                sponsorblock,
+      sponsorblock_categories:     sponsorblock_categories,
     }.to_json)
 
     if user = env.get? "user"

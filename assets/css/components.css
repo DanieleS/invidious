@@ -1033,6 +1033,16 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Righe che dipendono dalla casella qui sopra: rientrate, e scritte un po'
+   più piccole perché sono un dettaglio di quella, non una scelta a sé. */
+.field--sub {
+  padding-left: var(--s-5);
+}
+.field--sub > label {
+  font-size: var(--t-sm);
+  color: var(--text-3);
+}
+
 @media (max-width: 700px) {
   .field {
     grid-template-columns: minmax(0, 1fr);

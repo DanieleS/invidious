@@ -321,6 +321,56 @@ module Invidious::Routes::API::V1::Videos
     end
   end
 
+  # Read-only SponsorBlock lookup, proxied by the instance so that the
+  # SponsorBlock server never sees the viewer.
+  #
+  # Answers `{"videoId": ..., "segments": [...]}`, with an empty list when
+  # nobody has marked anything in this video yet.
+  def self.sponsorblock(env)
+    env.response.content_type = "application/json"
+
+    if !CONFIG.sponsorblock.enabled
+      haltf env, 403, error_json(403, "SponsorBlock is disabled on this instance")
+    end
+
+    id = env.params.url["id"]
+    if !id.matches?(/^[a-zA-Z0-9_-]{11}$/)
+      haltf env, 400, error_json(400, "Invalid video ID")
+    end
+
+    categories = env.params.query["categories"]?.try &.split(",").map(&.strip.downcase)
+    categories ||= CONFIG.default_user_preferences.sponsorblock_categories
+
+    begin
+      segments = IV::Videos::SponsorBlock.segments(id, categories)
+    rescue ex
+      haltf env, 502, error_json(502, ex)
+    end
+
+    env.response.headers["Cache-Control"] = "public, max-age=#{CONFIG.sponsorblock.cache_ttl}"
+
+    JSON.build do |json|
+      json.object do
+        json.field "videoId", id
+        json.field "segments" do
+          json.array do
+            segments.each do |segment|
+              json.object do
+                json.field "uuid", segment.uuid
+                json.field "category", segment.category
+                json.field "actionType", segment.action_type
+                json.field "startTime", segment.start_time
+                json.field "endTime", segment.end_time
+                json.field "locked", segment.locked
+                json.field "votes", segment.votes
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
   def self.comments(env)
     locale = env.get("preferences").as(Preferences).locale
     region = env.params.query["region"]?
