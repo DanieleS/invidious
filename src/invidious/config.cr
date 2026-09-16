@@ -57,9 +57,24 @@ struct ConfigPreferences
   # `sponsorblock_categories` lists the ones to skip, `sponsorblock_show` the
   # ones to only draw on the progress bar, and anything in neither list is
   # ignored altogether.
+  #
+  # Out of the box only the paid sponsor read is skipped, which is what the
+  # browser extension does too: a fresh instance that started jumping around
+  # on its own would be a surprise, and the one thing nobody misses is the
+  # advert. The rest is drawn and left to the viewer — a colour on the bar
+  # never moves the video, so showing it costs nothing. (The extension turns
+  # those off entirely instead, which hides the information for no gain.)
   property sponsorblock : Bool = true
-  property sponsorblock_categories : Array(String) = ["sponsor", "selfpromo", "interaction", "music_offtopic"]
-  property sponsorblock_show : Array(String) = ["intro", "outro", "preview", "filler"]
+  property sponsorblock_categories : Array(String) = ["sponsor"]
+  property sponsorblock_show : Array(String) = [
+    "selfpromo",
+    "interaction",
+    "intro",
+    "outro",
+    "preview",
+    "filler",
+    "music_offtopic",
+  ]
   # DeArrow: show the titles and thumbnails other viewers submitted in place
   # of the uploader's. `dearrow` is the master switch, the other two say what
   # gets replaced.
