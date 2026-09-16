@@ -1185,14 +1185,28 @@ default_user_preferences:
   #sponsorblock: true
 
   ##
-  ## Which kinds of segment are skipped. A category left out of this
-  ## list is neither skipped nor drawn on the progress bar.
+  ## Which kinds of segment are skipped outright.
+  ##
+  ## Only the paid sponsor read by default, as in the browser extension:
+  ## an instance that jumps around on its own out of the box would be a
+  ## surprise, and the advert is the one thing nobody misses.
   ##
   ## Accepted values: an array of "sponsor", "selfpromo", "interaction",
   ##   "intro", "outro", "preview", "filler", "music_offtopic"
-  ## Default: ["sponsor", "selfpromo", "interaction", "music_offtopic"]
+  ## Default: ["sponsor"]
   ##
-  #sponsorblock_categories: ["sponsor", "selfpromo", "interaction", "music_offtopic"]
+  #sponsorblock_categories: ["sponsor"]
+
+  ##
+  ## Which kinds are only drawn on the progress bar, and left to the
+  ## viewer to skip or watch. A colour on the bar never moves the video,
+  ## so everything else is here by default. A category in neither list is
+  ## ignored altogether; one in both is skipped.
+  ##
+  ## Accepted values: same as above
+  ## Default: everything except "sponsor"
+  ##
+  #sponsorblock_show: ["selfpromo", "interaction", "intro", "outro", "preview", "filler", "music_offtopic"]
 
   ##
   ## Show the titles and thumbnails submitted to DeArrow.
@@ -1213,6 +1227,36 @@ default_user_preferences:
   ##
   #dearrow_titles: true
   #dearrow_thumbnails: true
+
+  ##
+  ## Offer to jump to the "highlight": the point where a video gets to
+  ## the matter, as marked on SponsorBlock. It is an offer, never a jump
+  ## made on the viewer's behalf.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #sponsorblock_highlight: true
+
+  ##
+  ## Use the chapter names written on SponsorBlock, in place of the ones
+  ## Invidious guesses from the video description.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #sponsorblock_chapters: true
+
+  ##
+  ## Show a label on videos that are an advert from beginning to end.
+  ##
+  ## Note: this costs a second request to the SponsorBlock server per
+  ## video, cached like the first one.
+  ##
+  ## Accepted values: true, false
+  ## Default: true
+  ##
+  #sponsorblock_labels: true
 
   # -----------------------------
   #  Subscription feed

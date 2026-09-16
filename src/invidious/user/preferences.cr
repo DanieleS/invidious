@@ -64,6 +64,13 @@ struct Preferences
   @[YAML::Field(converter: Preferences::StringToArray)]
   property sponsorblock_categories : Array(String) = CONFIG.default_user_preferences.sponsorblock_categories
 
+  @[JSON::Field(converter: Preferences::StringToArray)]
+  @[YAML::Field(converter: Preferences::StringToArray)]
+  property sponsorblock_show : Array(String) = CONFIG.default_user_preferences.sponsorblock_show
+  property sponsorblock_highlight : Bool = CONFIG.default_user_preferences.sponsorblock_highlight
+  property sponsorblock_chapters : Bool = CONFIG.default_user_preferences.sponsorblock_chapters
+  property sponsorblock_labels : Bool = CONFIG.default_user_preferences.sponsorblock_labels
+
   property dearrow : Bool = CONFIG.default_user_preferences.dearrow
   property dearrow_titles : Bool = CONFIG.default_user_preferences.dearrow_titles
   property dearrow_thumbnails : Bool = CONFIG.default_user_preferences.dearrow_thumbnails

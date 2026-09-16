@@ -53,16 +53,40 @@ struct ConfigPreferences
   property show_nick : Bool = true
   property save_player_pos : Bool = false
   # SponsorBlock, in read-only mode: skip the segments other people have
-  # already marked. `sponsorblock_categories` lists what gets skipped; a
-  # category left out is neither skipped nor drawn on the progress bar.
+  # already marked. Every category is in one of three states:
+  # `sponsorblock_categories` lists the ones to skip, `sponsorblock_show` the
+  # ones to only draw on the progress bar, and anything in neither list is
+  # ignored altogether.
+  #
+  # Out of the box only the paid sponsor read is skipped, which is what the
+  # browser extension does too: a fresh instance that started jumping around
+  # on its own would be a surprise, and the one thing nobody misses is the
+  # advert. The rest is drawn and left to the viewer — a colour on the bar
+  # never moves the video, so showing it costs nothing. (The extension turns
+  # those off entirely instead, which hides the information for no gain.)
   property sponsorblock : Bool = true
-  property sponsorblock_categories : Array(String) = ["sponsor", "selfpromo", "interaction", "music_offtopic"]
+  property sponsorblock_categories : Array(String) = ["sponsor"]
+  property sponsorblock_show : Array(String) = [
+    "selfpromo",
+    "interaction",
+    "intro",
+    "outro",
+    "preview",
+    "filler",
+    "music_offtopic",
+  ]
   # DeArrow: show the titles and thumbnails other viewers submitted in place
   # of the uploader's. `dearrow` is the master switch, the other two say what
   # gets replaced.
   property dearrow : Bool = true
   property dearrow_titles : Bool = true
   property dearrow_thumbnails : Bool = true
+  # The three things SponsorBlock holds besides the segments to skip: the
+  # point where the video gets to the matter, the hand-written chapters, and
+  # the label for a video that is an advert from beginning to end.
+  property sponsorblock_highlight : Bool = true
+  property sponsorblock_chapters : Bool = true
+  property sponsorblock_labels : Bool = true
   @[YAML::Field(ignore: true)]
   property default_playlist : String? = nil
   property search_privacy : Bool = false

@@ -579,6 +579,21 @@
   color: var(--warn);
   flex: none;
 }
+/* Il bollino di SponsorBlock sotto il titolo: un video che è pubblicità dal
+   primo all'ultimo minuto. Non è un errore né un avviso della pagina, è un
+   fatto sul video, quindi un'etichetta e non un riquadro. */
+.sb-label {
+  display: inline-block;
+  margin-top: var(--s-3);
+  padding: 3px 11px;
+  border: 1px solid var(--warn);
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
 .notice--bad {
   border-inline-start-color: var(--accent);
   background: var(--accent-soft);

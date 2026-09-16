@@ -974,6 +974,7 @@
 .video-js .iv-sb-preview { --sb-color: #008fd6; }
 .video-js .iv-sb-filler { --sb-color: #7300ff; }
 .video-js .iv-sb-music-offtopic { --sb-color: #ff9900; }
+.video-js .iv-sb-poi-highlight { --sb-color: #ff1684; }
 
 /* Il cartellino sta in basso a sinistra, sopra la plancia: è una cosa
    successa al video, non un comando, e non deve coprire quello che si guarda.

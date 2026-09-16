@@ -153,10 +153,24 @@ module Invidious::Routes::PreferencesRoute
     sponsorblock ||= "off"
     sponsorblock = sponsorblock == "on"
 
+    # Ogni categoria ha tre stati: si salta, si vede soltanto sulla barra, o
+    # non esiste. Quando l'istanza ha SponsorBlock spento i menù non vengono
+    # disegnati, e senza questo ramo salvare le preferenze cancellerebbe in
+    # silenzio le scelte di prima.
     sponsorblock_categories = [] of String
-    Invidious::Videos::SponsorBlock::CATEGORIES.each do |category|
-      next if env.params.body["sponsorblock_categories[#{category}]"]?.try(&.as(String)) != "on"
-      sponsorblock_categories << category
+    sponsorblock_show = [] of String
+
+    if CONFIG.sponsorblock.enabled
+      Invidious::Videos::SponsorBlock::CATEGORIES.each do |category|
+        case env.params.body["sponsorblock_mode[#{category}]"]?.try(&.as(String))
+        when "skip" then sponsorblock_categories << category
+        when "show" then sponsorblock_show << category
+        end
+      end
+    else
+      saved = env.get?("preferences").try(&.as(Preferences))
+      sponsorblock_categories = saved.try(&.sponsorblock_categories) || CONFIG.default_user_preferences.sponsorblock_categories
+      sponsorblock_show = saved.try(&.sponsorblock_show) || CONFIG.default_user_preferences.sponsorblock_show
     end
 
     dearrow = env.params.body["dearrow"]?.try &.as(String)
@@ -176,6 +190,17 @@ module Invidious::Routes::PreferencesRoute
       saved = env.get?("preferences").try(&.as(Preferences).dearrow_thumbnails)
       dearrow_thumbnails = saved.nil? ? CONFIG.default_user_preferences.dearrow_thumbnails : saved
     end
+    sponsorblock_highlight = env.params.body["sponsorblock_highlight"]?.try &.as(String)
+    sponsorblock_highlight ||= "off"
+    sponsorblock_highlight = sponsorblock_highlight == "on"
+
+    sponsorblock_chapters = env.params.body["sponsorblock_chapters"]?.try &.as(String)
+    sponsorblock_chapters ||= "off"
+    sponsorblock_chapters = sponsorblock_chapters == "on"
+
+    sponsorblock_labels = env.params.body["sponsorblock_labels"]?.try &.as(String)
+    sponsorblock_labels ||= "off"
+    sponsorblock_labels = sponsorblock_labels == "on"
 
     # Convert to JSON and back again to take advantage of converters used for compatibility
     preferences = Preferences.from_json({
@@ -217,9 +242,13 @@ module Invidious::Routes::PreferencesRoute
       search_privacy:              search_privacy,
       sponsorblock:                sponsorblock,
       sponsorblock_categories:     sponsorblock_categories,
+      sponsorblock_show:           sponsorblock_show,
       dearrow:                     dearrow,
       dearrow_titles:              dearrow_titles,
       dearrow_thumbnails:          dearrow_thumbnails,
+      sponsorblock_highlight:      sponsorblock_highlight,
+      sponsorblock_chapters:       sponsorblock_chapters,
+      sponsorblock_labels:         sponsorblock_labels,
     }.to_json)
 
     if user = env.get? "user"

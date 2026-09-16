@@ -558,7 +558,7 @@
     "pwa_install": "Installa l'app",
     "offline_download_file": "Scarica il file",
     "preferences_sponsorblock_label": "SponsorBlock: ",
-    "preferences_sponsorblock_description": "Salta i tratti che altri hanno già segnalato, usando i dati di SponsorBlock. La richiesta la fa questo server: né il tuo indirizzo né il codice del video arrivano a SponsorBlock.",
+    "preferences_sponsorblock_description": "Usa i tratti che altri hanno già segnalato su SponsorBlock: ogni genere si può saltare, oppure solo vedere sulla barra. La richiesta la fa questo server: né il tuo indirizzo né il codice del video arrivano a SponsorBlock.",
     "sponsorblock_category_sponsor": "Sponsorizzazione",
     "sponsorblock_category_selfpromo": "Autopromozione",
     "sponsorblock_category_interaction": "Invito a iscriversi",
@@ -573,5 +573,18 @@
     "preferences_dearrow_label": "DeArrow: ",
     "preferences_dearrow_description": "Mostra i titoli e le anteprime che altri hanno proposto su DeArrow al posto di quelli scelti da chi ha caricato il video. La richiesta la fa questo server: né il tuo indirizzo né il codice del video arrivano a DeArrow.",
     "preferences_dearrow_titles_label": "Sostituisci i titoli",
-    "preferences_dearrow_thumbnails_label": "Sostituisci le anteprime"
+    "preferences_dearrow_thumbnails_label": "Sostituisci le anteprime",
+    "preferences_sponsorblock_highlight_label": "Proponi il salto al momento clou: ",
+    "preferences_sponsorblock_chapters_label": "Usa i capitoli di SponsorBlock: ",
+    "preferences_sponsorblock_chapters_description": "I nomi dei capitoli scritti da altri spettatori, al posto di quelli ricavati dalla descrizione.",
+    "preferences_sponsorblock_labels_label": "Mostra il bollino sui video interamente pubblicitari: ",
+    "preferences_sponsorblock_labels_description": "Segnala un video che è pubblicità dal primo all'ultimo minuto. Costa una richiesta in più al server di SponsorBlock.",
+    "sponsorblock_highlight": "Momento clou più avanti",
+    "sponsorblock_highlight_go": "Vai lì",
+    "sponsorblock_label_sponsor": "Video interamente sponsorizzato",
+    "sponsorblock_label_selfpromo": "Video interamente di autopromozione",
+    "sponsorblock_label_exclusive_access": "L'autore ha avuto accesso esclusivo o un prodotto omaggio",
+    "sponsorblock_mode_skip": "Salta",
+    "sponsorblock_mode_show": "Mostra soltanto",
+    "sponsorblock_mode_off": "Ignora"
 }
