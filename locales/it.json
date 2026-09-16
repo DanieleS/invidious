@@ -558,7 +558,7 @@
     "pwa_install": "Installa l'app",
     "offline_download_file": "Scarica il file",
     "preferences_sponsorblock_label": "SponsorBlock: ",
-    "preferences_sponsorblock_description": "Salta i tratti che altri hanno già segnalato, usando i dati di SponsorBlock. La richiesta la fa questo server: né il tuo indirizzo né il codice del video arrivano a SponsorBlock.",
+    "preferences_sponsorblock_description": "Usa i tratti che altri hanno già segnalato su SponsorBlock: ogni genere si può saltare, oppure solo vedere sulla barra. La richiesta la fa questo server: né il tuo indirizzo né il codice del video arrivano a SponsorBlock.",
     "sponsorblock_category_sponsor": "Sponsorizzazione",
     "sponsorblock_category_selfpromo": "Autopromozione",
     "sponsorblock_category_interaction": "Invito a iscriversi",
@@ -583,5 +583,8 @@
     "sponsorblock_highlight_go": "Vai lì",
     "sponsorblock_label_sponsor": "Video interamente sponsorizzato",
     "sponsorblock_label_selfpromo": "Video interamente di autopromozione",
-    "sponsorblock_label_exclusive_access": "L'autore ha avuto accesso esclusivo o un prodotto omaggio"
+    "sponsorblock_label_exclusive_access": "L'autore ha avuto accesso esclusivo o un prodotto omaggio",
+    "sponsorblock_mode_skip": "Salta",
+    "sponsorblock_mode_show": "Mostra soltanto",
+    "sponsorblock_mode_off": "Ignora"
 }

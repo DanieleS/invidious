@@ -551,7 +551,7 @@
     "pwa_install": "Install the app",
     "offline_download_file": "Download the file",
     "preferences_sponsorblock_label": "SponsorBlock: ",
-    "preferences_sponsorblock_description": "Skip the segments other viewers have already marked, using data from SponsorBlock. The lookup is made by this instance: neither your address nor the video ID reaches the SponsorBlock server.",
+    "preferences_sponsorblock_description": "Use the segments other viewers have already marked, from SponsorBlock: each kind can be skipped, or only drawn on the progress bar. The lookup is made by this instance: neither your address nor the video ID reaches the SponsorBlock server.",
     "sponsorblock_category_sponsor": "Sponsor",
     "sponsorblock_category_selfpromo": "Unpaid or self promotion",
     "sponsorblock_category_interaction": "Reminder to subscribe",
@@ -576,5 +576,8 @@
     "sponsorblock_highlight_go": "Jump there",
     "sponsorblock_label_sponsor": "This whole video is a sponsorship",
     "sponsorblock_label_selfpromo": "This whole video is self-promotion",
-    "sponsorblock_label_exclusive_access": "The author got exclusive access or a free product"
+    "sponsorblock_label_exclusive_access": "The author got exclusive access or a free product",
+    "sponsorblock_mode_skip": "Skip",
+    "sponsorblock_mode_show": "Show only",
+    "sponsorblock_mode_off": "Ignore"
 }

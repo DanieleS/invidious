@@ -1185,14 +1185,23 @@ default_user_preferences:
   #sponsorblock: true
 
   ##
-  ## Which kinds of segment are skipped. A category left out of this
-  ## list is neither skipped nor drawn on the progress bar.
+  ## Which kinds of segment are skipped outright.
   ##
   ## Accepted values: an array of "sponsor", "selfpromo", "interaction",
   ##   "intro", "outro", "preview", "filler", "music_offtopic"
   ## Default: ["sponsor", "selfpromo", "interaction", "music_offtopic"]
   ##
   #sponsorblock_categories: ["sponsor", "selfpromo", "interaction", "music_offtopic"]
+
+  ##
+  ## Which kinds are only drawn on the progress bar, and left to the
+  ## viewer to skip or watch. A category in neither list is ignored
+  ## altogether; one in both is skipped.
+  ##
+  ## Accepted values: same as above
+  ## Default: ["intro", "outro", "preview", "filler"]
+  ##
+  #sponsorblock_show: ["intro", "outro", "preview", "filler"]
 
   ##
   ## Show the titles and thumbnails submitted to DeArrow.

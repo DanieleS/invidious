@@ -1122,13 +1122,17 @@ function iv_sb_load() {
     // In diretta non c'è niente da saltare, e la durata cambia sotto i piedi.
     if (video_data.live_now) return;
 
-    var categories = cfg.categories || [];
-    if (!categories.length && !cfg.highlight && !cfg.chapters && !cfg.video_labels) return;
+    // Due liste: quella che si salta e quella che si vede soltanto sulla
+    // barra. Al server si chiedono insieme — a lui non cambia niente, la
+    // differenza la fa il lettore quando ci passa sopra.
+    var skip = cfg.skip || [];
+    var wanted = skip.concat(cfg.show || []);
+    if (!wanted.length && !cfg.highlight && !cfg.chapters && !cfg.video_labels) return;
 
     // Si chiede solo quello che si userà: il bollino, in particolare, costa al
     // server una seconda richiesta là fuori.
     var url = '/api/v1/sponsorblock/' + encodeURIComponent(video_data.id) +
-        '?categories=' + encodeURIComponent(categories.join(','));
+        '?categories=' + encodeURIComponent(wanted.join(','));
     if (cfg.highlight) url += '&highlight=1';
     if (cfg.chapters) url += '&chapters=1';
     if (cfg.video_labels) url += '&label=1';
@@ -1137,7 +1141,7 @@ function iv_sb_load() {
         on200: function (response) {
             if (!response) return;
 
-            IV_SB.segments = (response.segments || []).map(function (seg) {
+            var all = (response.segments || []).map(function (seg) {
                 return {
                     uuid: seg.uuid,
                     category: seg.category,
@@ -1147,7 +1151,14 @@ function iv_sb_load() {
                 };
             });
 
-            IV_SB.marks = IV_SB.segments.slice();
+            // Si dipinge tutto quello che è arrivato; si salta (o si silenzia)
+            // solo quello che sta nella lista dei tratti da saltare. Un tratto
+            // «mostra soltanto» resta sulla barra e si guarda.
+            IV_SB.segments = all.filter(function (seg) {
+                return skip.indexOf(seg.category) !== -1;
+            });
+
+            IV_SB.marks = all.slice();
 
             if (response.highlight) {
                 IV_SB.highlight = {

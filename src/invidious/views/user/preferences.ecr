@@ -136,10 +136,27 @@
                     <span class="preference-description"><%= I18n.translate(locale, "preferences_sponsorblock_description") %></span>
                 </div>
 
+                <%- # Tre stati, come nell'estensione: una categoria si salta, si vede
+                    # soltanto sulla barra, oppure non esiste. «Mostra soltanto» serve
+                    # per i tratti che si vogliono riconoscere ma decidere sul momento,
+                    # tipo le sigle. -%>
                 <% Invidious::Videos::SponsorBlock::CATEGORIES.each do |category| %>
-                    <div class="field field--check field--sub">
-                        <label for="sponsorblock_categories[<%= category %>]"><%= I18n.translate(locale, "sponsorblock_category_" + category) %></label>
-                        <input name="sponsorblock_categories[<%= category %>]" id="sponsorblock_categories[<%= category %>]" type="checkbox" <% if preferences.sponsorblock_categories.includes?(category) %>checked<% end %>>
+                    <%-
+                        mode = if preferences.sponsorblock_categories.includes?(category)
+                                   "skip"
+                               elsif preferences.sponsorblock_show.includes?(category)
+                                   "show"
+                               else
+                                   "off"
+                               end
+                    -%>
+                    <div class="field field--sub">
+                        <label for="sponsorblock_mode[<%= category %>]"><%= I18n.translate(locale, "sponsorblock_category_" + category) %></label>
+                        <select name="sponsorblock_mode[<%= category %>]" id="sponsorblock_mode[<%= category %>]">
+                            <% {"skip", "show", "off"}.each do |option| %>
+                                <option value="<%= option %>" <% if mode == option %>selected<% end %>><%= I18n.translate(locale, "sponsorblock_mode_" + option) %></option>
+                            <% end %>
+                        </select>
                     </div>
                 <% end %>
 

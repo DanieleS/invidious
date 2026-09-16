@@ -346,8 +346,12 @@ module Invidious::Routes::API::V1::Videos
       haltf env, 400, error_json(400, InvalidVideoID.new(id))
     end
 
+    # Le categorie che interessano a chi chiede, che le salti o che le voglia
+    # solo vedere sulla barra: qui non c'è differenza, la distinzione la fa il
+    # lettore. Senza il parametro si risponde con quelle di serie dell'istanza.
     categories = env.params.query["categories"]?.try &.split(",").map(&.strip.downcase)
-    categories ||= CONFIG.default_user_preferences.sponsorblock_categories
+    categories ||= CONFIG.default_user_preferences.sponsorblock_categories +
+                   CONFIG.default_user_preferences.sponsorblock_show
 
     want_highlight = env.params.query["highlight"]? == "1"
     want_chapters = env.params.query["chapters"]? == "1"
